@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Login</title>
+</head>
+<body>
+    <h1>Debug del Login</h1>
+    
+    <div>
+        <h3>1. Probar Login Directo:</h3>
+        <input type="email" id="email" placeholder="Email" value="nelson.galvez@flyr.com">
+        <input type="password" id="password" placeholder="Password" value="123456">
+        <button onclick="testLogin()">Test Login</button>
+    </div>
+
+    <div>
+        <h3>2. Probar Rutas del Dashboard:</h3>
+        <button onclick="testResumen()">Test /api/resumen</button>
+        <button onclick="testIngresos()">Test /api/ingresos</button>
+        <button onclick="testGastos()">Test /api/gastos</button>
+        <button onclick="testCategorias()">Test /api/categorias</button>
+    </div>
+
+    <div id="result" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc; background: #f5f5f5;"></div>
+
+    <script>
+        function log(message) {
+            const result = document.getElementById('result');
+            result.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${message}</div>`;
+        }
+
+        async function testLogin() {
+            try {
+                log('🔐 Probando login...');
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        email: document.getElementById('email').value,
+                        password: document.getElementById('password').value
+                    })
+                });
+                
+                const data = await response.json();
+                log(`📨 Login - Status: ${response.status}, Success: ${data.success}`);
+                if (data.success) {
+                    log('✅ Login EXITOSO');
+                    localStorage.setItem('user_info', JSON.stringify(data.usuario));
+                } else {
+                    log(`❌ Login FALLIDO: ${data.error}`);
+                }
+            } catch (error) {
+                log(`💥 Error: ${error.message}`);
+            }
+        }
+
+        async function testResumen() {
+            try {
+                log('📊 Probando /api/resumen...');
+                const response = await fetch('/api/resumen?usuario_id=1');
+                const data = await response.json();
+                log(`📨 Resumen - Status: ${response.status}, Success: ${data.success}`);
+            } catch (error) {
+                log(`💥 Error resumen: ${error.message}`);
+            }
+        }
+
+        async function testIngresos() {
+            try {
+                log('💰 Probando /api/ingresos...');
+                const response = await fetch('/api/ingresos?usuario_id=1');
+                const data = await response.json();
+                log(`📨 Ingresos - Status: ${response.status}, Success: ${data.success}`);
+            } catch (error) {
+                log(`💥 Error ingresos: ${error.message}`);
+            }
+        }
+
+        async function testGastos() {
+            try {
+                log('💸 Probando /api/gastos...');
+                const response = await fetch('/api/gastos?usuario_id=1');
+                const data = await response.json();
+                log(`📨 Gastos - Status: ${response.status}, Success: ${data.success}`);
+            } catch (error) {
+                log(`💥 Error gastos: ${error.message}`);
+            }
+        }
+
+        async function testCategorias() {
+            try {
+                log('📂 Probando /api/categorias...');
+                const response = await fetch('/api/categorias/ingresos');
+                const data = await response.json();
+                log(`📨 Categorías - Status: ${response.status}, Success: ${data.success}`);
+            } catch (error) {
+                log(`💥 Error categorías: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
