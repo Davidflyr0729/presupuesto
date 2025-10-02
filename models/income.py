@@ -1,52 +1,49 @@
-from utils.database import Database
+from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
-class IncomeModel:
-    def __init__(self):
-        self.db = Database()
-        self.table = "ingresos"
+# En lugar de from presupuesto_app import db
+db = SQLAlchemy()  # O usa la instancia correcta
 
-    def create(self, usuario_id, concepto, monto, categoria_id, fecha, descripcion=None):
-        """Crear nuevo ingreso"""
-        query = f"""
-        INSERT INTO {self.table} (usuario_id, concepto, monto, categoria_id, fecha, descripcion)
-        VALUES (%s, %s, %s, %s, %s, %s)
-        """
-        return self.db.execute_query(
-            query, 
-            (usuario_id, concepto, monto, categoria_id, fecha, descripcion)
-        )
-
-    def get_by_user(self, usuario_id, month=None, year=None):
-        """Obtener ingresos del usuario"""
-        query = f"""
-        SELECT i.*, ci.nombre as categoria_nombre, ci.color, ci.icono
-        FROM {self.table} i 
-        LEFT JOIN categorias_ingresos ci ON i.categoria_id = ci.id 
-        WHERE i.usuario_id = %s
-        """
-        params = [usuario_id]
-
-        if month and year:
-            query += " AND MONTH(i.fecha) = %s AND YEAR(i.fecha) = %s"
-            params.extend([month, year])
-
-        query += " ORDER BY i.fecha DESC"
-        return self.db.execute_query(query, tuple(params), fetch=True)
-
-    def get_total(self, usuario_id, month=None, year=None):
-        """Obtener total de ingresos"""
-        query = f"SELECT SUM(monto) as total FROM {self.table} WHERE usuario_id = %s"
-        params = [usuario_id]
-
-        if month and year:
-            query += " AND MONTH(fecha) = %s AND YEAR(fecha) = %s"
-            params.extend([month, year])
-
-        result = self.db.execute_query(query, tuple(params), fetch_one=True)
-        return result['total'] if result and result['total'] else 0
-
-    def get_categories(self):
-        """Obtener todas las categorías de ingresos"""
-        query = "SELECT * FROM categorias_ingresos ORDER BY nombre"
-        return self.db.execute_query(query, fetch=True)
+class Income(db.Model):
+    __tablename__ = 'incomes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    concepto = db.Column(db.String(200), nullable=False)
+    monto = db.Column(db.Float, nullable=False)
+    fecha = db.Column(db.Date, nullable=False, default=datetime.utcnow)
+    categoria = db.Column(db.String(100), nullable=False)
+    descripcion = db.Column(db.Text)
+    recurrente = db.Column(db.Boolean, default=False)
+    frecuencia = db.Column(db.String(50))
+    fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __init__(self, concepto, monto, fecha, categoria, descripcion=None, recurrente=False, frecuencia=None):
+        self.concepto = concepto
+        self.monto = monto
+        self.fecha = fecha
+        self.categoria = categoria
+        self.descripcion = descripcion
+        self.recurrente = recurrente
+        self.frecuencia = frecuencia
+    
+    @property
+    def fecha_formateada(self):
+        """Devuelve la fecha formateada como string"""
+        if self.fecha:
+            return self.fecha.strftime('%d/%m/%Y') if hasattr(self.fecha, 'strftime') else str(self.fecha)
+        return "N/A"
+    
+    @property
+    def monto_formateado(self):
+        """Devuelve el monto formateado como string"""
+        return f"${self.monto:,.0f}"
+    
+    @property
+    def fecha_iso(self):
+        """Devuelve la fecha en formato ISO para inputs date"""
+        if self.fecha:
+            return self.fecha.strftime('%Y-%m-%d') if hasattr(self.fecha, 'strftime') else ''
+        return ''
+    
+    def __repr__(self):
+        return f'<Income {self.concepto} - {self.monto_formateado}>'

@@ -16,7 +16,7 @@
         <div class="card bg-primary text-white">
             <div class="card-body">
                 <h6 class="card-title">Total Ahorrado</h6>
-                <h3 class="mb-0">${{ "{:,.0f}".format(summary.total_ahorrado) }}</h3>
+                <h3 class="mb-0">${{ "{:,.0f}".format(summary.total_ahorrado) if summary and summary.total_ahorrado else 0 }}</h3>
             </div>
         </div>
     </div>
@@ -24,7 +24,7 @@
         <div class="card bg-success text-white">
             <div class="card-body">
                 <h6 class="card-title">Meta Total</h6>
-                <h3 class="mb-0">${{ "{:,.0f}".format(summary.total_meta) }}</h3>
+                <h3 class="mb-0">${{ "{:,.0f}".format(summary.total_meta) if summary and summary.total_meta else 0 }}</h3>
             </div>
         </div>
     </div>
@@ -32,7 +32,7 @@
         <div class="card bg-info text-white">
             <div class="card-body">
                 <h6 class="card-title">Progreso Total</h6>
-                <h3 class="mb-0">{{ summary.porcentaje_total }}%</h3>
+                <h3 class="mb-0">{{ summary.porcentaje_total if summary and summary.porcentaje_total else 0 }}%</h3>
             </div>
         </div>
     </div>
@@ -40,7 +40,7 @@
         <div class="card bg-warning text-white">
             <div class="card-body">
                 <h6 class="card-title">Metas Activas</h6>
-                <h3 class="mb-0">{{ summary.total_metas }}</h3>
+                <h3 class="mb-0">{{ summary.total_metas if summary and summary.total_metas else 0 }}</h3>
             </div>
         </div>
     </div>
@@ -142,12 +142,12 @@
                                 
                                 <div class="mb-3">
                                     <div class="d-flex justify-content-between mb-1">
-                                        <small>Progreso: {{ saving.porcentaje_completado }}%</small>
-                                        <small>${{ "{:,.0f}".format(saving.ahorrado_actual) }} / ${{ "{:,.0f}".format(saving.meta_total) }}</small>
+                                        <small>Progreso: {{ saving.porcentaje_completado if saving.porcentaje_completado else 0 }}%</small>
+                                        <small>${{ "{:,.0f}".format(saving.ahorrado_actual if saving.ahorrado_actual else 0) }} / ${{ "{:,.0f}".format(saving.meta_total if saving.meta_total else 0) }}</small>
                                     </div>
                                     <div class="progress" style="height: 10px;">
                                         <div class="progress-bar 
-                                            {% if saving.porcentaje_completado >= 100 %} 
+                                            {% if saving.porcentaje_completado and saving.porcentaje_completado >= 100 %} 
                                                 bg-success
                                             {% elif saving.dias_restantes is defined and saving.dias_restantes < 0 %} 
                                                 bg-danger
@@ -156,8 +156,8 @@
                                             {% endif %}" 
                                             
                                             role="progressbar" 
-                                            style="width: {{ saving.porcentaje_completado }}%;"
-                                            aria-valuenow="{{ saving.porcentaje_completado }}" 
+                                            style="width: {{ saving.porcentaje_completado if saving.porcentaje_completado else 0 }}%; max-width: 100%;"
+                                            aria-valuenow="{{ saving.porcentaje_completado if saving.porcentaje_completado else 0 }}" 
                                             aria-valuemin="0" 
                                             aria-valuemax="100">
                                         </div>
@@ -168,7 +168,7 @@
                                     <div class="col-6">
                                         <strong>Inicio</strong><br>
                                         {% if saving.fecha_inicio %}
-                                            {{ saving.fecha_inicio.strftime('%d/%m/%Y') }}
+                                            {{ saving.fecha_formateada_inicio if saving.fecha_formateada_inicio else 'N/A' }}
                                         {% else %}
                                             N/A
                                         {% endif %}
@@ -176,7 +176,7 @@
                                     <div class="col-6">
                                         <strong>Objetivo</strong><br>
                                         {% if saving.fecha_objetivo %}
-                                            {{ saving.fecha_objetivo.strftime('%d/%m/%Y') }}
+                                            {{ saving.fecha_formateada_objetivo if saving.fecha_formateada_objetivo else 'Sin fecha' }}
                                         {% else %}
                                             Sin fecha
                                         {% endif %}
@@ -212,8 +212,8 @@
                                         <button class="btn btn-outline-primary btn-sm edit-saving" 
                                                 data-saving-id="{{ saving.id }}"
                                                 data-concepto="{{ saving.concepto }}"
-                                                data-meta-total="{{ saving.meta_total }}"
-                                                data-fecha-objetivo="{% if saving.fecha_objetivo %}{{ saving.fecha_objetivo.strftime('%Y-%m-%d') }}{% endif %}"
+                                                data-meta-total="{{ saving.meta_total if saving.meta_total else 0 }}"
+                                                data-fecha-objetivo="{{ saving.fecha_objetivo_iso if saving.fecha_objetivo_iso else '' }}"
                                                 data-descripcion="{{ saving.descripcion or '' }}">
                                             <i class="fas fa-edit"></i>
                                         </button>
@@ -250,6 +250,7 @@
             </div>
             <div class="modal-body">
                 <form id="editSavingForm">
+                    <input type="hidden" id="edit_saving_id">
                     <div class="mb-3">
                         <label for="edit_concepto" class="form-label">Concepto *</label>
                         <input type="text" class="form-control" id="edit_concepto" required>
@@ -288,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const savingId = this.getAttribute('data-saving-id');
             const montoInput = this.querySelector('input[type="number"]');
-            const monto = montoInput.value;
+            const monto = parseFloat(montoInput.value);
             
             if (!monto || monto <= 0) {
                 alert('Por favor ingresa un monto válido');
@@ -300,18 +301,27 @@ document.addEventListener('DOMContentLoaded', function() {
             
             fetch(`/savings/add-money/${savingId}`, {
                 method: 'POST',
-                body: formData
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     location.reload();
                 } else {
-                    alert('Error al agregar dinero: ' + data.error);
+                    alert('Error al agregar dinero: ' + (data.error || 'Error desconocido'));
                 }
             })
             .catch(error => {
-                alert('Error al agregar dinero: ' + error);
+                console.error('Error:', error);
+                alert('Error al agregar dinero: ' + error.message);
             });
         });
     });
@@ -325,10 +335,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const fechaObjetivo = this.getAttribute('data-fecha-objetivo');
             const descripcion = this.getAttribute('data-descripcion');
             
-            document.getElementById('edit_concepto').value = concepto;
-            document.getElementById('edit_meta_total').value = metaTotal;
-            document.getElementById('edit_fecha_objetivo').value = fechaObjetivo;
-            document.getElementById('edit_descripcion').value = descripcion;
+            document.getElementById('edit_concepto').value = concepto || '';
+            document.getElementById('edit_meta_total').value = metaTotal || '';
+            document.getElementById('edit_fecha_objetivo').value = fechaObjetivo || '';
+            document.getElementById('edit_descripcion').value = descripcion || '';
+            document.getElementById('edit_saving_id').value = currentSavingId;
             
             const modal = new bootstrap.Modal(document.getElementById('editSavingModal'));
             modal.show();
@@ -337,13 +348,19 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Guardar cambios de meta de ahorro
     document.getElementById('saveSavingChanges').addEventListener('click', function() {
-        const concepto = document.getElementById('edit_concepto').value;
+        const savingId = document.getElementById('edit_saving_id').value;
+        const concepto = document.getElementById('edit_concepto').value.trim();
         const metaTotal = document.getElementById('edit_meta_total').value;
         const fechaObjetivo = document.getElementById('edit_fecha_objetivo').value;
-        const descripcion = document.getElementById('edit_descripcion').value;
+        const descripcion = document.getElementById('edit_descripcion').value.trim();
         
         if (!concepto || !metaTotal) {
             alert('Por favor completa los campos obligatorios');
+            return;
+        }
+        
+        if (parseFloat(metaTotal) <= 0) {
+            alert('La meta total debe ser mayor a 0');
             return;
         }
         
@@ -353,20 +370,29 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('fecha_objetivo', fechaObjetivo);
         formData.append('descripcion', descripcion);
         
-        fetch(`/savings/update/${currentSavingId}`, {
+        fetch(`/savings/update/${savingId}`, {
             method: 'POST',
-            body: formData
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error en la respuesta del servidor');
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 location.reload();
             } else {
-                alert('Error al actualizar la meta: ' + data.error);
+                alert('Error al actualizar la meta: ' + (data.error || 'Error desconocido'));
             }
         })
         .catch(error => {
-            alert('Error al actualizar la meta: ' + error);
+            console.error('Error:', error);
+            alert('Error al actualizar la meta: ' + error.message);
         });
     });
     
@@ -375,23 +401,30 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('click', function() {
             const savingId = this.getAttribute('data-saving-id');
             
-            if (confirm('¿Estás seguro de que quieres eliminar esta meta de ahorro?')) {
+            if (confirm('¿Estás seguro de que quieres eliminar esta meta de ahorro? Esta acción no se puede deshacer.')) {
                 fetch(`/savings/delete/${savingId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error en la respuesta del servidor');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
                         location.reload();
                     } else {
-                        alert('Error al eliminar la meta: ' + data.error);
+                        alert('Error al eliminar la meta: ' + (data.error || 'Error desconocido'));
                     }
                 })
                 .catch(error => {
-                    alert('Error al eliminar la meta: ' + error);
+                    console.error('Error:', error);
+                    alert('Error al eliminar la meta: ' + error.message);
                 });
             }
         });
