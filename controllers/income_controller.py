@@ -1,169 +1,158 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, session, flash, redirect, url_for
+import mysql.connector
 from datetime import datetime
-from presupuesto_app import db
-from presupuesto_app.models.income import Income
+from config import Config
 
 class IncomeController:
     def __init__(self):
         self.bp = Blueprint('income', __name__, url_prefix='/income')
         self.register_routes()
     
+    def get_db_connection(self):
+        """Crear conexión a la base de datos"""
+        try:
+            conn = mysql.connector.connect(
+                host=Config.MYSQL_HOST,
+                user=Config.MYSQL_USER,
+                password=Config.MYSQL_PASSWORD,
+                database=Config.MYSQL_DB,
+                port=Config.MYSQL_PORT
+            )
+            return conn
+        except Exception as e:
+            print(f"Error conectando a la BD: {e}")
+            return None
+    
     def register_routes(self):
         self.bp.route('/')(self.index)
-        self.bp.route('/add', methods=['POST'])(self.add)
-        self.bp.route('/update/<int:income_id>', methods=['POST'])(self.update)
-        self.bp.route('/delete/<int:income_id>', methods=['POST'])(self.delete)
-        self.bp.route('/get/<int:income_id>')(self.get_income)
+        self.bp.route('/add', methods=['POST'])(self.add_income)
+        self.bp.route('/delete/<int:income_id>', methods=['POST'])(self.delete_income)
     
     def index(self):
+        """Página principal de ingresos"""
+        if 'user_id' not in session:
+            flash('Por favor inicia sesión', 'error')
+            return redirect(url_for('auth.login'))
+        
         try:
-            # Obtener todos los ingresos ordenados por fecha (más recientes primero)
-            incomes = Income.query.order_by(Income.fecha.desc()).all()
+            user_id = session['user_id']
+            conn = self.get_db_connection()
+            if not conn:
+                flash('Error de conexión a la base de datos', 'error')
+                return render_template('incomes/index.html', incomes=[], categories=[])
             
-            # Calcular resumen
-            total_ingresos = sum(income.monto for income in incomes)
-            total_ingresos_mes = sum(income.monto for income in incomes 
-                                    if income.fecha and income.fecha.month == datetime.now().month)
-            total_recurrentes = sum(income.monto for income in incomes if income.recurrente)
+            cursor = conn.cursor(dictionary=True)
             
-            # Agrupar por categoría
-            ingresos_por_categoria = {}
-            for income in incomes:
-                if income.categoria in ingresos_por_categoria:
-                    ingresos_por_categoria[income.categoria] += income.monto
-                else:
-                    ingresos_por_categoria[income.categoria] = income.monto
+            # Obtener ingresos del usuario
+            cursor.execute("""
+                SELECT i.*, ci.nombre as categoria_nombre, ci.color, ci.icono
+                FROM ingresos i 
+                LEFT JOIN categorias_ingresos ci ON i.categoria_id = ci.id 
+                WHERE i.usuario_id = %s
+                ORDER BY i.fecha DESC
+            """, (user_id,))
+            incomes = cursor.fetchall()
             
-            summary = {
-                'total_ingresos': total_ingresos,
-                'total_ingresos_mes': total_ingresos_mes,
-                'total_recurrentes': total_recurrentes,
-                'total_registros': len(incomes),
-                'ingresos_por_categoria': ingresos_por_categoria
-            }
+            # Obtener categorías
+            cursor.execute("SELECT * FROM categorias_ingresos")
+            categories = cursor.fetchall()
             
-            return render_template('incomes/index.html',
-                                 incomes=incomes,
-                                 summary=summary)
-                                 
+            cursor.close()
+            conn.close()
+            
+            return render_template('incomes/index.html', 
+                                 incomes=incomes, 
+                                 categories=categories,
+                                 active_page='income')
+            
         except Exception as e:
-            print(f"Error en incomes index: {e}")
-            return render_template('incomes/index.html',
-                                 incomes=[],
-                                 summary={'total_ingresos': 0, 'total_ingresos_mes': 0, 
-                                         'total_recurrentes': 0, 'total_registros': 0,
-                                         'ingresos_por_categoria': {}})
+            print(f"Error en incomes: {e}")
+            flash('Error al cargar los ingresos', 'error')
+            return render_template('incomes/index.html', incomes=[], categories=[])
     
-    def add(self):
+    def add_income(self):
+        """Agregar nuevo ingreso"""
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'error': 'No autorizado'})
+        
         try:
+            user_id = session['user_id']
             concepto = request.form.get('concepto')
-            monto = float(request.form.get('monto'))
-            fecha_str = request.form.get('fecha')
-            categoria = request.form.get('categoria')
-            descripcion = request.form.get('descripcion')
-            recurrente = bool(request.form.get('recurrente'))
-            frecuencia = request.form.get('frecuencia')
+            monto = request.form.get('monto')
+            categoria_id = request.form.get('categoria_id')
+            fecha = request.form.get('fecha')
+            descripcion = request.form.get('descripcion', '')
             
-            # Convertir fecha string a objeto date
-            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date() if fecha_str else datetime.now().date()
+            # Validaciones
+            if not concepto or not monto or not categoria_id:
+                return jsonify({'success': False, 'error': 'Todos los campos son requeridos'})
             
-            # Validaciones básicas
-            if not concepto or monto <= 0:
-                return jsonify({'success': False, 'error': 'Datos inválidos'})
+            try:
+                monto = float(monto)
+                if monto <= 0:
+                    return jsonify({'success': False, 'error': 'El monto debe ser mayor a 0'})
+            except ValueError:
+                return jsonify({'success': False, 'error': 'Monto inválido'})
             
-            # Crear nuevo ingreso
-            nuevo_ingreso = Income(
-                concepto=concepto,
-                monto=monto,
-                fecha=fecha,
-                categoria=categoria,
-                descripcion=descripcion,
-                recurrente=recurrente,
-                frecuencia=frecuencia if recurrente else None
-            )
+            # Usar fecha actual si no se proporciona
+            if not fecha:
+                fecha = datetime.now().strftime('%Y-%m-%d')
             
-            db.session.add(nuevo_ingreso)
-            db.session.commit()
+            conn = self.get_db_connection()
+            if not conn:
+                return jsonify({'success': False, 'error': 'Error de conexión'})
+            
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                INSERT INTO ingresos (usuario_id, concepto, monto, categoria_id, fecha, descripcion)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (user_id, concepto, monto, categoria_id, fecha, descripcion))
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
             
             return jsonify({'success': True, 'message': 'Ingreso agregado correctamente'})
             
         except Exception as e:
-            db.session.rollback()
             print(f"Error al agregar ingreso: {e}")
             return jsonify({'success': False, 'error': 'Error al agregar el ingreso'})
     
-    def update(self, income_id):
+    def delete_income(self, income_id):
+        """Eliminar ingreso"""
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'error': 'No autorizado'})
+        
         try:
-            income = Income.query.get_or_404(income_id)
+            user_id = session['user_id']
+            conn = self.get_db_connection()
+            if not conn:
+                return jsonify({'success': False, 'error': 'Error de conexión'})
             
-            concepto = request.form.get('concepto')
-            monto = float(request.form.get('monto'))
-            fecha_str = request.form.get('fecha')
-            categoria = request.form.get('categoria')
-            descripcion = request.form.get('descripcion')
-            recurrente = bool(request.form.get('recurrente'))
-            frecuencia = request.form.get('frecuencia')
+            cursor = conn.cursor()
             
-            # Convertir fecha string a objeto date
-            fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date() if fecha_str else datetime.now().date()
+            # Verificar que el ingreso pertenece al usuario
+            cursor.execute("SELECT id FROM ingresos WHERE id = %s AND usuario_id = %s", 
+                         (income_id, user_id))
             
-            # Validaciones básicas
-            if not concepto or monto <= 0:
-                return jsonify({'success': False, 'error': 'Datos inválidos'})
+            if not cursor.fetchone():
+                cursor.close()
+                conn.close()
+                return jsonify({'success': False, 'error': 'Ingreso no encontrado'})
             
-            # Actualizar ingreso
-            income.concepto = concepto
-            income.monto = monto
-            income.fecha = fecha
-            income.categoria = categoria
-            income.descripcion = descripcion
-            income.recurrente = recurrente
-            income.frecuencia = frecuencia if recurrente else None
+            cursor.execute("DELETE FROM ingresos WHERE id = %s AND usuario_id = %s", 
+                         (income_id, user_id))
             
-            db.session.commit()
-            
-            return jsonify({'success': True, 'message': 'Ingreso actualizado correctamente'})
-            
-        except Exception as e:
-            db.session.rollback()
-            print(f"Error al actualizar ingreso: {e}")
-            return jsonify({'success': False, 'error': 'Error al actualizar el ingreso'})
-    
-    def delete(self, income_id):
-        try:
-            income = Income.query.get_or_404(income_id)
-            
-            db.session.delete(income)
-            db.session.commit()
+            conn.commit()
+            cursor.close()
+            conn.close()
             
             return jsonify({'success': True, 'message': 'Ingreso eliminado correctamente'})
             
         except Exception as e:
-            db.session.rollback()
             print(f"Error al eliminar ingreso: {e}")
             return jsonify({'success': False, 'error': 'Error al eliminar el ingreso'})
-    
-    def get_income(self, income_id):
-        try:
-            income = Income.query.get_or_404(income_id)
-            
-            return jsonify({
-                'success': True,
-                'income': {
-                    'id': income.id,
-                    'concepto': income.concepto,
-                    'monto': income.monto,
-                    'fecha': income.fecha_iso,
-                    'categoria': income.categoria,
-                    'descripcion': income.descripcion or '',
-                    'recurrente': income.recurrente,
-                    'frecuencia': income.frecuencia or ''
-                }
-            })
-            
-        except Exception as e:
-            print(f"Error al obtener ingreso: {e}")
-            return jsonify({'success': False, 'error': 'Error al obtener el ingreso'})
 
-# Crear instancia del controlador
+# Crear instancia
 income_controller = IncomeController()

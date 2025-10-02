@@ -1,101 +1,116 @@
-from flask import Blueprint, render_template, request, session, redirect, url_for, jsonify
-from models.dashboard import DashboardModel
-from models.income import IncomeModel
-from models.expense import ExpenseModel
-from models.savings import SavingsModel  # ← NUEVO: Importar modelo de ahorros
-from utils.helpers import decimal_to_float
+from flask import Blueprint, render_template, session, redirect, url_for
+import mysql.connector
 from datetime import datetime
+from config import Config
 
 class DashboardController:
     def __init__(self):
         self.bp = Blueprint('dashboard', __name__)
-        self.dashboard_model = DashboardModel()
-        self.income_model = IncomeModel()
-        self.expense_model = ExpenseModel()
-        self.savings_model = SavingsModel()  # ← NUEVO: Instancia de ahorros
         self.register_routes()
-
+    
+    def get_db_connection(self):
+        """Crear conexión a la base de datos"""
+        try:
+            conn = mysql.connector.connect(
+                host=Config.MYSQL_HOST,
+                user=Config.MYSQL_USER,
+                password=Config.MYSQL_PASSWORD,
+                database=Config.MYSQL_DB,
+                port=Config.MYSQL_PORT
+            )
+            return conn
+        except Exception as e:
+            print(f"Error conectando a la BD: {e}")
+            return None
+    
     def register_routes(self):
         self.bp.route('/')(self.index)
-        self.bp.route('/api/summary')(self.api_summary)
-        self.bp.route('/api/expenses-by-category')(self.api_expenses_by_category)
-        self.bp.route('/api/savings-progress')(self.api_savings_progress)  # ← NUEVO: Ruta para ahorros
-
+    
     def index(self):
-        """Página principal del dashboard"""
         if 'user_id' not in session:
             return redirect(url_for('auth.login'))
         
         user_id = session['user_id']
-        current_month = datetime.now().month
-        current_year = datetime.now().year
         
-        # Obtener datos para el dashboard
-        summary = self.dashboard_model.get_monthly_summary(user_id, current_month, current_year)
-        expenses_by_category = self.dashboard_model.get_expenses_by_category(user_id, current_month, current_year)
-        recent_transactions = self.dashboard_model.get_recent_transactions(user_id, 5)
-        savings_summary = self.savings_model.get_savings_summary(user_id)  # ← NUEVO: Resumen de ahorros
-        
-        # Obtener últimos ingresos y gastos
-        recent_incomes = self.income_model.get_by_user(user_id, current_month, current_year)[:3]
-        recent_expenses = self.expense_model.get_by_user(user_id, current_month, current_year)[:3]
-        
-        return render_template('dashboard/index.html',
-                             summary=summary,
-                             expenses_by_category=expenses_by_category,
-                             recent_transactions=recent_transactions,
-                             recent_incomes=recent_incomes,
-                             recent_expenses=recent_expenses,
-                             savings_summary=savings_summary)  # ← NUEVO: Pasar resumen de ahorros
+        try:
+            conn = self.get_db_connection()
+            if not conn:
+                return render_template('dashboard/index.html',
+                                    total_ingresos=0, total_gastos=0, saldo=0,
+                                    ingresos_mes=0, gastos_mes=0,
+                                    ultimos_ingresos=[], ultimos_gastos=[])
+            
+            cursor = conn.cursor(dictionary=True)
+            
+            # 1. Total ingresos
+            cursor.execute("SELECT SUM(monto) as total FROM ingresos WHERE usuario_id = %s", (user_id,))
+            total_ingresos_result = cursor.fetchone()
+            total_ingresos = total_ingresos_result['total'] if total_ingresos_result['total'] else 0
+            
+            # 2. Total gastos
+            cursor.execute("SELECT SUM(monto) as total FROM gastos WHERE usuario_id = %s", (user_id,))
+            total_gastos_result = cursor.fetchone()
+            total_gastos = total_gastos_result['total'] if total_gastos_result['total'] else 0
+            
+            # 3. Calcular saldo
+            saldo = total_ingresos - total_gastos
+            
+            # 4. Ingresos del mes actual
+            current_month = datetime.now().strftime('%Y-%m')
+            cursor.execute("""
+                SELECT SUM(monto) as total 
+                FROM ingresos 
+                WHERE usuario_id = %s AND DATE_FORMAT(fecha, '%%Y-%%m') = %s
+            """, (user_id, current_month))
+            ingresos_mes_result = cursor.fetchone()
+            ingresos_mes = ingresos_mes_result['total'] if ingresos_mes_result['total'] else 0
+            
+            # 5. Gastos del mes actual
+            cursor.execute("""
+                SELECT SUM(monto) as total 
+                FROM gastos 
+                WHERE usuario_id = %s AND DATE_FORMAT(fecha, '%%Y-%%m') = %s
+            """, (user_id, current_month))
+            gastos_mes_result = cursor.fetchone()
+            gastos_mes = gastos_mes_result['total'] if gastos_mes_result['total'] else 0
+            
+            # 6. Últimos 5 ingresos
+            cursor.execute("""
+                SELECT i.*, ci.nombre as categoria_nombre, ci.color, ci.icono
+                FROM ingresos i 
+                LEFT JOIN categorias_ingresos ci ON i.categoria_id = ci.id 
+                WHERE i.usuario_id = %s
+                ORDER BY i.fecha DESC, i.id DESC LIMIT 5
+            """, (user_id,))
+            ultimos_ingresos = cursor.fetchall()
+            
+            # 7. Últimos 5 gastos
+            cursor.execute("""
+                SELECT g.*, cg.nombre as categoria_nombre, cg.color, cg.icono
+                FROM gastos g 
+                LEFT JOIN categorias_gastos cg ON g.categoria_id = cg.id 
+                WHERE g.usuario_id = %s
+                ORDER BY g.fecha DESC, g.id DESC LIMIT 5
+            """, (user_id,))
+            ultimos_gastos = cursor.fetchall()
+            
+            cursor.close()
+            conn.close()
+            
+            return render_template('dashboard/index.html',
+                                total_ingresos=total_ingresos,
+                                total_gastos=total_gastos,
+                                saldo=saldo,
+                                ingresos_mes=ingresos_mes,
+                                gastos_mes=gastos_mes,
+                                ultimos_ingresos=ultimos_ingresos,
+                                ultimos_gastos=ultimos_gastos)
+                                
+        except Exception as e:
+            print(f"Error en dashboard: {e}")
+            return render_template('dashboard/index.html',
+                                total_ingresos=0, total_gastos=0, saldo=0,
+                                ingresos_mes=0, gastos_mes=0,
+                                ultimos_ingresos=[], ultimos_gastos=[])
 
-    def api_summary(self):
-        """API para obtener resumen mensual (AJAX)"""
-        if 'user_id' not in session:
-            return jsonify({'error': 'No autorizado'}), 401
-        
-        user_id = session['user_id']
-        month = request.args.get('month', datetime.now().month, type=int)
-        year = request.args.get('year', datetime.now().year, type=int)
-        
-        summary = self.dashboard_model.get_monthly_summary(user_id, month, year)
-        
-        # Convertir decimales a float para JSON
-        for key, value in summary.items():
-            summary[key] = decimal_to_float(value)
-        
-        return jsonify(summary)
-
-    def api_expenses_by_category(self):
-        """API para obtener gastos por categoría (AJAX)"""
-        if 'user_id' not in session:
-            return jsonify({'error': 'No autorizado'}), 401
-        
-        user_id = session['user_id']
-        month = request.args.get('month', datetime.now().month, type=int)
-        year = request.args.get('year', datetime.now().year, type=int)
-        
-        expenses = self.dashboard_model.get_expenses_by_category(user_id, month, year)
-        
-        # Convertir decimales a float
-        for expense in expenses:
-            expense['total'] = decimal_to_float(expense['total'])
-        
-        return jsonify(expenses)
-
-    def api_savings_progress(self):
-        """API para obtener progreso de ahorros (AJAX)"""
-        if 'user_id' not in session:
-            return jsonify({'error': 'No autorizado'}), 401
-        
-        user_id = session['user_id']
-        savings_summary = self.savings_model.get_savings_summary(user_id)
-        
-        # Convertir decimales a float
-        for key, value in savings_summary.items():
-            if isinstance(value, (int, float)):
-                savings_summary[key] = decimal_to_float(value)
-        
-        return jsonify(savings_summary)
-
-# Crear instancia del controlador
 dashboard_controller = DashboardController()

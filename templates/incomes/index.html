@@ -8,39 +8,37 @@
         <i class="fas fa-money-bill-wave me-2"></i>
         Mis Ingresos
     </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+            <i class="fas fa-sync-alt me-1"></i>
+            Actualizar
+        </button>
+    </div>
 </div>
 
 <!-- Resumen de Ingresos -->
 <div class="row mb-4">
-    <div class="col-md-3 mb-3">
+    <div class="col-md-4 mb-3">
         <div class="card bg-success text-white">
             <div class="card-body">
                 <h6 class="card-title">Total Ingresos</h6>
-                <h3 class="mb-0">${{ "{:,.0f}".format(summary.total_ingresos) if summary and summary.total_ingresos else 0 }}</h3>
+                <h3 class="mb-0">${{ "{:,.0f}".format(total_ingresos) if total_ingresos else 0 }}</h3>
             </div>
         </div>
     </div>
-    <div class="col-md-3 mb-3">
+    <div class="col-md-4 mb-3">
         <div class="card bg-primary text-white">
             <div class="card-body">
                 <h6 class="card-title">Ingresos Este Mes</h6>
-                <h3 class="mb-0">${{ "{:,.0f}".format(summary.total_ingresos_mes) if summary and summary.total_ingresos_mes else 0 }}</h3>
+                <h3 class="mb-0">${{ "{:,.0f}".format(total_ingresos_mes) if total_ingresos_mes else 0 }}</h3>
             </div>
         </div>
     </div>
-    <div class="col-md-3 mb-3">
-        <div class="card bg-info text-white">
-            <div class="card-body">
-                <h6 class="card-title">Recurrentes</h6>
-                <h3 class="mb-0">${{ "{:,.0f}".format(summary.total_recurrentes) if summary and summary.total_recurrentes else 0 }}</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
+    <div class="col-md-4 mb-3">
         <div class="card bg-warning text-white">
             <div class="card-body">
                 <h6 class="card-title">Total Registros</h6>
-                <h3 class="mb-0">{{ summary.total_registros if summary and summary.total_registros else 0 }}</h3>
+                <h3 class="mb-0">{{ total_registros if total_registros else 0 }}</h3>
             </div>
         </div>
     </div>
@@ -76,15 +74,14 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="categoria" class="form-label">Categoría *</label>
-                        <select class="form-select" id="categoria" name="categoria" required>
+                        <label for="categoria_id" class="form-label">Categoría *</label>
+                        <select class="form-select" id="categoria_id" name="categoria_id" required>
                             <option value="">Selecciona una categoría</option>
-                            <option value="salario">Salario</option>
-                            <option value="freelance">Trabajo Freelance</option>
-                            <option value="inversiones">Inversiones</option>
-                            <option value="regalo">Regalo</option>
-                            <option value="bonificacion">Bonificación</option>
-                            <option value="otros">Otros</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">
+                                {{ category.icono }} {{ category.nombre }}
+                            </option>
+                            {% endfor %}
                         </select>
                     </div>
 
@@ -92,27 +89,6 @@
                         <label for="descripcion" class="form-label">Descripción</label>
                         <textarea class="form-control" id="descripcion" name="descripcion" 
                                   rows="3" placeholder="Detalles adicionales..."></textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="recurrente" name="recurrente">
-                            <label class="form-check-label" for="recurrente">
-                                Ingreso recurrente
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="mb-3" id="frecuenciaContainer" style="display: none;">
-                        <label for="frecuencia" class="form-label">Frecuencia</label>
-                        <select class="form-select" id="frecuencia" name="frecuencia">
-                            <option value="">Selecciona frecuencia</option>
-                            <option value="diario">Diario</option>
-                            <option value="semanal">Semanal</option>
-                            <option value="quincenal">Quincenal</option>
-                            <option value="mensual">Mensual</option>
-                            <option value="anual">Anual</option>
-                        </select>
                     </div>
 
                     <button type="submit" class="btn btn-success w-100">
@@ -143,14 +119,13 @@
                                 <th>Concepto</th>
                                 <th>Categoría</th>
                                 <th>Monto</th>
-                                <th>Tipo</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for income in incomes %}
                             <tr>
-                                <td>{{ income.fecha_formateada }}</td>
+                                <td>{{ income.fecha.strftime('%d/%m/%Y') if income.fecha else '' }}</td>
                                 <td>
                                     <strong>{{ income.concepto }}</strong>
                                     {% if income.descripcion %}
@@ -158,17 +133,12 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <span class="badge bg-secondary">{{ income.categoria }}</span>
+                                    <span class="badge" style="background-color: {{ income.color }}; color: white;">
+                                        {{ income.icono }} {{ income.categoria_nombre }}
+                                    </span>
                                 </td>
                                 <td>
-                                    <span class="fw-bold text-success">{{ income.monto_formateado }}</span>
-                                </td>
-                                <td>
-                                    {% if income.recurrente %}
-                                    <span class="badge bg-info">Recurrente</span>
-                                    {% else %}
-                                    <span class="badge bg-warning">Único</span>
-                                    {% endif %}
+                                    <span class="fw-bold text-success">${{ "{:,.0f}".format(income.monto) }}</span>
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
@@ -176,11 +146,9 @@
                                                 data-income-id="{{ income.id }}"
                                                 data-concepto="{{ income.concepto }}"
                                                 data-monto="{{ income.monto }}"
-                                                data-fecha="{{ income.fecha_iso }}"
-                                                data-categoria="{{ income.categoria }}"
-                                                data-descripcion="{{ income.descripcion or '' }}"
-                                                data-recurrente="{{ 'true' if income.recurrente else 'false' }}"
-                                                data-frecuencia="{{ income.frecuencia or '' }}">
+                                                data-fecha="{{ income.fecha.strftime('%Y-%m-%d') if income.fecha else '' }}"
+                                                data-categoria-id="{{ income.categoria_id }}"
+                                                data-descripcion="{{ income.descripcion or '' }}">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <button class="btn btn-outline-danger delete-income" 
@@ -230,39 +198,19 @@
                         <input type="date" class="form-control" id="edit_fecha" required>
                     </div>
                     <div class="mb-3">
-                        <label for="edit_categoria" class="form-label">Categoría *</label>
-                        <select class="form-select" id="edit_categoria" required>
+                        <label for="edit_categoria_id" class="form-label">Categoría *</label>
+                        <select class="form-select" id="edit_categoria_id" required>
                             <option value="">Selecciona una categoría</option>
-                            <option value="salario">Salario</option>
-                            <option value="freelance">Trabajo Freelance</option>
-                            <option value="inversiones">Inversiones</option>
-                            <option value="regalo">Regalo</option>
-                            <option value="bonificacion">Bonificación</option>
-                            <option value="otros">Otros</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">
+                                {{ category.icono }} {{ category.nombre }}
+                            </option>
+                            {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
                         <label for="edit_descripcion" class="form-label">Descripción</label>
                         <textarea class="form-control" id="edit_descripcion" rows="3"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="edit_recurrente">
-                            <label class="form-check-label" for="edit_recurrente">
-                                Ingreso recurrente
-                            </label>
-                        </div>
-                    </div>
-                    <div class="mb-3" id="edit_frecuenciaContainer" style="display: none;">
-                        <label for="edit_frecuencia" class="form-label">Frecuencia</label>
-                        <select class="form-select" id="edit_frecuencia">
-                            <option value="">Selecciona frecuencia</option>
-                            <option value="diario">Diario</option>
-                            <option value="semanal">Semanal</option>
-                            <option value="quincenal">Quincenal</option>
-                            <option value="mensual">Mensual</option>
-                            <option value="anual">Anual</option>
-                        </select>
                     </div>
                 </form>
             </div>
@@ -285,22 +233,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('fecha').value = today;
     document.getElementById('edit_fecha').value = today;
     
-    // Mostrar/ocultar frecuencia según checkbox recurrente
-    document.getElementById('recurrente').addEventListener('change', function() {
-        document.getElementById('frecuenciaContainer').style.display = this.checked ? 'block' : 'none';
-    });
-    
-    document.getElementById('edit_recurrente').addEventListener('change', function() {
-        document.getElementById('edit_frecuenciaContainer').style.display = this.checked ? 'block' : 'none';
-    });
-    
     // Agregar nuevo ingreso
     document.getElementById('addIncomeForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
         const formData = new FormData(this);
         
-        fetch('/incomes/add', {
+        fetch('/income/add', {
             method: 'POST',
             body: formData,
             headers: {
@@ -328,22 +267,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const concepto = this.getAttribute('data-concepto');
             const monto = this.getAttribute('data-monto');
             const fecha = this.getAttribute('data-fecha');
-            const categoria = this.getAttribute('data-categoria');
+            const categoriaId = this.getAttribute('data-categoria-id');
             const descripcion = this.getAttribute('data-descripcion');
-            const recurrente = this.getAttribute('data-recurrente') === 'true';
-            const frecuencia = this.getAttribute('data-frecuencia');
             
             document.getElementById('edit_income_id').value = currentIncomeId;
             document.getElementById('edit_concepto').value = concepto || '';
             document.getElementById('edit_monto').value = monto || '';
             document.getElementById('edit_fecha').value = fecha || today;
-            document.getElementById('edit_categoria').value = categoria || '';
+            document.getElementById('edit_categoria_id').value = categoriaId || '';
             document.getElementById('edit_descripcion').value = descripcion || '';
-            document.getElementById('edit_recurrente').checked = recurrente;
-            document.getElementById('edit_frecuencia').value = frecuencia || '';
-            
-            // Mostrar/ocultar frecuencia
-            document.getElementById('edit_frecuenciaContainer').style.display = recurrente ? 'block' : 'none';
             
             const modal = new bootstrap.Modal(document.getElementById('editIncomeModal'));
             modal.show();
@@ -356,12 +288,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const concepto = document.getElementById('edit_concepto').value.trim();
         const monto = document.getElementById('edit_monto').value;
         const fecha = document.getElementById('edit_fecha').value;
-        const categoria = document.getElementById('edit_categoria').value;
+        const categoriaId = document.getElementById('edit_categoria_id').value;
         const descripcion = document.getElementById('edit_descripcion').value.trim();
-        const recurrente = document.getElementById('edit_recurrente').checked;
-        const frecuencia = document.getElementById('edit_frecuencia').value;
         
-        if (!concepto || !monto || !fecha || !categoria) {
+        if (!concepto || !monto || !fecha || !categoriaId) {
             alert('Por favor completa los campos obligatorios');
             return;
         }
@@ -375,12 +305,10 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('concepto', concepto);
         formData.append('monto', monto);
         formData.append('fecha', fecha);
-        formData.append('categoria', categoria);
+        formData.append('categoria_id', categoriaId);
         formData.append('descripcion', descripcion);
-        formData.append('recurrente', recurrente);
-        formData.append('frecuencia', recurrente ? frecuencia : '');
         
-        fetch(`/incomes/update/${incomeId}`, {
+        fetch(`/income/update/${incomeId}`, {
             method: 'POST',
             body: formData,
             headers: {
@@ -407,10 +335,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const incomeId = this.getAttribute('data-income-id');
             
             if (confirm('¿Estás seguro de que quieres eliminar este ingreso? Esta acción no se puede deshacer.')) {
-                fetch(`/incomes/delete/${incomeId}`, {
+                fetch(`/income/delete/${incomeId}`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 })

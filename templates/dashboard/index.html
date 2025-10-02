@@ -18,15 +18,15 @@
 <!-- Summary Cards -->
 <div class="row">
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card income-card">
+        <div class="card border-left-success shadow h-100 py-2">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-uppercase mb-1">Ingresos</div>
-                        <div class="h5 mb-0">${{ "{:,.0f}".format(summary.total_income) }}</div>
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Ingresos Totales</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">${{ "{:,.0f}".format(total_ingresos) }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-money-bill-wave fa-2x"></i>
+                        <i class="fas fa-money-bill-wave fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
@@ -34,15 +34,15 @@
     </div>
 
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card expense-card">
+        <div class="card border-left-danger shadow h-100 py-2">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-uppercase mb-1">Gastos</div>
-                        <div class="h5 mb-0">${{ "{:,.0f}".format(summary.total_expense) }}</div>
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Gastos Totales</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">${{ "{:,.0f}".format(total_gastos) }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-receipt fa-2x"></i>
+                        <i class="fas fa-receipt fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
@@ -50,15 +50,15 @@
     </div>
 
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card balance-card">
+        <div class="card border-left-primary shadow h-100 py-2">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-uppercase mb-1">Balance</div>
-                        <div class="h5 mb-0">${{ "{:,.0f}".format(summary.balance) }}</div>
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Saldo Actual</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">${{ "{:,.0f}".format(saldo) }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-balance-scale fa-2x"></i>
+                        <i class="fas fa-balance-scale fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
@@ -66,153 +66,94 @@
     </div>
 
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card savings-card">
+        <div class="card border-left-info shadow h-100 py-2">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-uppercase mb-1">Tasa de Ahorro</div>
-                        <div class="h5 mb-0">{{ summary.savings_rate }}%</div>
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Ingresos Este Mes</div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">${{ "{:,.0f}".format(ingresos_mes) }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-piggy-bank fa-2x"></i>
+                        <i class="fas fa-calendar fa-2x text-gray-300"></i>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Progreso de Ahorros -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-piggy-bank me-2"></i>
-                    Progreso de Ahorros
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3 text-center">
-                        <h3 class="text-primary">${{ "{:,.0f}".format(savings_summary.total_ahorrado) }}</h3>
-                        <small class="text-muted">Total Ahorrado</small>
-                    </div>
-                    <div class="col-md-3 text-center">
-                        <h3 class="text-success">${{ "{:,.0f}".format(savings_summary.total_meta) }}</h3>
-                        <small class="text-muted">Meta Total</small>
-                    </div>
-                    <div class="col-md-3 text-center">
-                        <h3 class="text-info">{{ savings_summary.porcentaje_total }}%</h3>
-                        <small class="text-muted">Progreso Total</small>
-                    </div>
-                    <div class="col-md-3 text-center">
-                        <h3 class="text-warning">{{ savings_summary.total_metas }}</h3>
-                        <small class="text-muted">Metas Activas</small>
-                    </div>
-                </div>
-                {% if savings_summary.total_meta > 0 %}
-                <div class="progress mt-3" style="height: 20px;">
-                    <div class="progress-bar bg-success" 
-                         role="progressbar" 
-                         style="width: {{ savings_summary.porcentaje_total }}%;"
-                         aria-valuenow="{{ savings_summary.porcentaje_total }}" 
-                         aria-valuemin="0" 
-                         aria-valuemax="100">
-                        {{ savings_summary.porcentaje_total }}%
-                    </div>
-                </div>
-                {% else %}
-                <div class="text-center text-muted py-3">
-                    <p>No tienes metas de ahorro activas</p>
-                    <a href="{{ url_for('savings.index') }}" class="btn btn-primary btn-sm">
-                        <i class="fas fa-plus me-1"></i>
-                        Crear Primera Meta
-                    </a>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
 <div class="row">
-    <!-- Recent Transactions -->
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-history me-2"></i>
-                    Transacciones Recientes
-                </h5>
+    <!-- Últimos Ingresos -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-success">
+                    <i class="fas fa-money-bill-wave me-2"></i>
+                    Últimos Ingresos
+                </h6>
             </div>
             <div class="card-body">
-                {% if recent_transactions %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Concepto</th>
-                                <th>Tipo</th>
-                                <th>Monto</th>
-                                <th>Fecha</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for transaction in recent_transactions %}
-                            <tr>
-                                <td>{{ transaction.concepto }}</td>
-                                <td>
-                                    <span class="badge {% if transaction.tipo == 'income' %}bg-success{% else %}bg-danger{% endif %}">
-                                        {{ 'Ingreso' if transaction.tipo == 'income' else 'Gasto' }}
+                {% if ultimos_ingresos %}
+                    <div class="list-group list-group-flush">
+                        {% for income in ultimos_ingresos %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ income.concepto }}</h6>
+                                <small class="text-muted">
+                                    {{ income.fecha.strftime('%d/%m/%Y') if income.fecha else '' }}
+                                    • 
+                                    <span class="badge" style="background-color: {{ income.color }}; color: white;">
+                                        {{ income.icono }} {{ income.categoria_nombre }}
                                     </span>
-                                </td>
-                                <td>${{ "{:,.0f}".format(transaction.monto) }}</td>
-                                <td>{{ transaction.fecha.strftime('%d/%m/%Y') if transaction.fecha }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                                </small>
+                            </div>
+                            <span class="badge bg-success rounded-pill">${{ "{:,.0f}".format(income.monto) }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
                 {% else %}
-                <div class="text-center text-muted py-4">
-                    <i class="fas fa-receipt fa-3x mb-3"></i>
-                    <p>No hay transacciones recientes</p>
-                </div>
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
+                        <p>No hay ingresos registrados</p>
+                    </div>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Expenses by Category -->
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-chart-pie me-2"></i>
-                    Gastos por Categoría
-                </h5>
+    <!-- Últimos Gastos -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-danger">
+                    <i class="fas fa-receipt me-2"></i>
+                    Últimos Gastos
+                </h6>
             </div>
             <div class="card-body">
-                {% if expenses_by_category %}
-                <div class="list-group list-group-flush">
-                    {% for category in expenses_by_category %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="badge me-2" style="background-color: {{ category.color }}">
-                                {{ category.icono if category.icono else '📦' }}
-                            </span>
-                            {{ category.nombre }}
+                {% if ultimos_gastos %}
+                    <div class="list-group list-group-flush">
+                        {% for expense in ultimos_gastos %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ expense.concepto }}</h6>
+                                <small class="text-muted">
+                                    {{ expense.fecha.strftime('%d/%m/%Y') if expense.fecha else '' }}
+                                    • 
+                                    <span class="badge" style="background-color: {{ expense.color }}; color: white;">
+                                        {{ expense.icono }} {{ expense.categoria_nombre }}
+                                    </span>
+                                </small>
+                            </div>
+                            <span class="badge bg-danger rounded-pill">${{ "{:,.0f}".format(expense.monto) }}</span>
                         </div>
-                        <span class="fw-bold">${{ "{:,.0f}".format(category.total) }}</span>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
-                </div>
                 {% else %}
-                <div class="text-center text-muted py-4">
-                    <i class="fas fa-chart-pie fa-3x mb-3"></i>
-                    <p>No hay gastos este mes</p>
-                </div>
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-receipt fa-2x mb-2"></i>
+                        <p>No hay gastos registrados</p>
+                    </div>
                 {% endif %}
             </div>
         </div>
@@ -222,17 +163,17 @@
 <!-- Quick Actions -->
 <div class="row mt-4">
     <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
                     <i class="fas fa-bolt me-2"></i>
                     Acciones Rápidas
-                </h5>
+                </h6>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-3 mb-2">
-                        <a href="{{ url_for('incomes.index') }}" class="btn btn-success w-100">
+                        <a href="{{ url_for('income.index') }}" class="btn btn-success w-100">
                             <i class="fas fa-plus-circle me-2"></i>
                             Agregar Ingreso
                         </a>
