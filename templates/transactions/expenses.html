@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}Gastos - Presupuesto Personal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-receipt me-2"></i>
+        Gastos
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+            <i class="fas fa-calendar me-1"></i>
+            {{ current_month }}/{{ current_year }}
+        </button>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#">Action</a></li>
+            <li><a class="dropdown-item" href="#">Another action</a></li>
+        </ul>
+    </div>
+</div>
+
+<!-- Resumen -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col">
+                        <h5 class="card-title">Total Gastado</h5>
+                        <h2 class="mb-0">${{ "{:,.0f}".format(total) }}</h2>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-receipt fa-3x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Formulario para agregar gastos -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Agregar Gasto
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('expenses.add') }}">
+                    <div class="mb-3">
+                        <label for="concepto" class="form-label">Concepto *</label>
+                        <input type="text" class="form-control" id="concepto" name="concepto" 
+                               placeholder="¿En qué gastaste?" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="monto" class="form-label">Monto *</label>
+                        <input type="number" class="form-control" id="monto" name="monto" 
+                               step="0.01" min="0.01" placeholder="0.00" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="categoria_id" class="form-label">Categoría *</label>
+                        <select class="form-select" id="categoria_id" name="categoria_id" required>
+                            <option value="">Selecciona una categoría</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" data-color="{{ category.color }}">
+                                {{ category.icono }} {{ category.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="fecha" class="form-label">Fecha *</label>
+                        <input type="date" class="form-control" id="fecha" name="fecha" 
+                               value="{{ now.strftime('%Y-%m-%d') }}" required>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="esencial" name="esencial" checked>
+                        <label class="form-check-label" for="esencial">Gasto esencial</label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" 
+                                  rows="3" placeholder="Detalles adicionales..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-danger w-100">
+                        <i class="fas fa-save me-2"></i>
+                        Guardar Gasto
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de gastos -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    Lista de Gastos
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if expenses %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Concepto</th>
+                                <th>Categoría</th>
+                                <th>Monto</th>
+                                <th>Fecha</th>
+                                <th>Esencial</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense in expenses %}
+                            <tr>
+                                <td>
+                                    <strong>{{ expense.concepto }}</strong>
+                                    {% if expense.descripcion %}
+                                    <br><small class="text-muted">{{ expense.descripcion }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge" style="background-color: {{ expense.color }}">
+                                        {{ expense.icono }} {{ expense.categoria_nombre }}
+                                    </span>
+                                </td>
+                                <td class="fw-bold text-danger">${{ "{:,.0f}".format(expense.monto) }}</td>
+                                <td>{{ expense.fecha.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    {% if expense.esencial %}
+                                    <span class="badge bg-success">Sí</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">No</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-danger delete-expense" 
+                                            data-expense-id="{{ expense.id }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-receipt fa-3x mb-3"></i>
+                    <p>No hay gastos registrados este mes</p>
+                    <a href="{{ url_for('expenses.index') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>
+                        Agregar Primer Gasto
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Eliminar gastos
+    document.querySelectorAll('.delete-expense').forEach(button => {
+        button.addEventListener('click', function() {
+            const expenseId = this.getAttribute('data-expense-id');
+            
+            if (confirm('¿Estás seguro de que quieres eliminar este gasto?')) {
+                fetch(`/expenses/delete/${expenseId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error al eliminar el gasto: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    alert('Error al eliminar el gasto: ' + error);
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

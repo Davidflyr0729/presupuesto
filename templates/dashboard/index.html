@@ -10,7 +10,7 @@
     </h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary">Septiembre 2025</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary">{{ now.strftime('%B %Y') }}</button>
         </div>
     </div>
 </div>
@@ -77,6 +77,60 @@
                         <i class="fas fa-piggy-bank fa-2x"></i>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Progreso de Ahorros -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-piggy-bank me-2"></i>
+                    Progreso de Ahorros
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <h3 class="text-primary">${{ "{:,.0f}".format(savings_summary.total_ahorrado) }}</h3>
+                        <small class="text-muted">Total Ahorrado</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h3 class="text-success">${{ "{:,.0f}".format(savings_summary.total_meta) }}</h3>
+                        <small class="text-muted">Meta Total</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h3 class="text-info">{{ savings_summary.porcentaje_total }}%</h3>
+                        <small class="text-muted">Progreso Total</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h3 class="text-warning">{{ savings_summary.total_metas }}</h3>
+                        <small class="text-muted">Metas Activas</small>
+                    </div>
+                </div>
+                {% if savings_summary.total_meta > 0 %}
+                <div class="progress mt-3" style="height: 20px;">
+                    <div class="progress-bar bg-success" 
+                         role="progressbar" 
+                         style="width: {{ savings_summary.porcentaje_total }}%;"
+                         aria-valuenow="{{ savings_summary.porcentaje_total }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                        {{ savings_summary.porcentaje_total }}%
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-3">
+                    <p>No tienes metas de ahorro activas</p>
+                    <a href="{{ url_for('savings.index') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus me-1"></i>
+                        Crear Primera Meta
+                    </a>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -184,22 +238,22 @@
                         </a>
                     </div>
                     <div class="col-md-3 mb-2">
-                        <button class="btn btn-danger w-100">
+                        <a href="{{ url_for('expenses.index') }}" class="btn btn-danger w-100">
                             <i class="fas fa-minus-circle me-2"></i>
                             Agregar Gasto
-                        </button>
+                        </a>
                     </div>
                     <div class="col-md-3 mb-2">
-                        <button class="btn btn-primary w-100">
-                            <i class="fas fa-chart-line me-2"></i>
-                            Ver Reportes
-                        </button>
+                        <a href="{{ url_for('budgets.index') }}" class="btn btn-primary w-100">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Ver Presupuestos
+                        </a>
                     </div>
                     <div class="col-md-3 mb-2">
-                        <button class="btn btn-warning w-100">
+                        <a href="{{ url_for('savings.index') }}" class="btn btn-warning w-100">
                             <i class="fas fa-piggy-bank me-2"></i>
-                            Metas de Ahorro
-                        </button>
+                            Mis Ahorros
+                        </a>
                     </div>
                 </div>
             </div>

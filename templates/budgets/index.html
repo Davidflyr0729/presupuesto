@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block title %}Presupuestos - Presupuesto Personal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-chart-pie me-2"></i>
+        Presupuestos
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                {{ current_month }}/{{ current_year }}
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Resumen de Presupuestos CORREGIDO -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h6 class="card-title">Total Presupuestado</h6>
+                <h3 class="mb-0">${{ "{:,.0f}".format(summary.total_presupuestado) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <h6 class="card-title">Total Gastado</h6>
+                <h3 class="mb-0">${{ "{:,.0f}".format(summary.total_gastado) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card {% if summary.saldo_restante >= 0 %}bg-success{% else %}bg-warning{% endif %} text-white">
+            <div class="card-body">
+                <h6 class="card-title">Saldo Restante</h6>
+                <h3 class="mb-0">${{ "{:,.0f}".format(summary.saldo_restante) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h6 class="card-title">Categorías</h6>
+                <h3 class="mb-0">{{ summary.total_categorias }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Formulario para agregar presupuestos -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Agregar Presupuesto
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('budgets.add') }}">
+                    <div class="mb-3">
+                        <label for="categoria_gasto_id" class="form-label">Categoría *</label>
+                        <select class="form-select" id="categoria_gasto_id" name="categoria_gasto_id" required>
+                            <option value="">Selecciona una categoría</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" data-color="{{ category.color }}">
+                                {{ category.icono }} {{ category.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if not categories %}
+                        <div class="form-text text-warning">
+                            Todas las categorías ya tienen presupuesto asignado.
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="monto_maximo" class="form-label">Monto Máximo *</label>
+                        <input type="number" class="form-control" id="monto_maximo" name="monto_maximo" 
+                               step="0.01" min="0.01" placeholder="0.00" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="mes_year" class="form-label">Mes y Año *</label>
+                        <input type="month" class="form-control" id="mes_year" name="mes_year" 
+                               value="{{ now.strftime('%Y-%m') }}" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" {% if not categories %}disabled{% endif %}>
+                        <i class="fas fa-save me-2"></i>
+                        Guardar Presupuesto
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Información de ayuda -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    ¿Cómo funcionan los presupuestos?
+                </h6>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <ul class="list-unstyled">
+                        <li>✅ <strong>Verde:</strong> Menos del 70% usado</li>
+                        <li>🟡 <strong>Amarillo:</strong> 70% - 90% usado</li>
+                        <li>🔴 <strong>Rojo:</strong> Más del 90% usado</li>
+                    </ul>
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de presupuestos -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    Mis Presupuestos - {{ budgets | length }} categorías
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if budgets %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Categoría</th>
+                                <th>Presupuesto</th>
+                                <th>Gastado</th>
+                                <th>Saldo</th>
+                                <th>Progreso</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for budget in budgets %}
+                            <tr>
+                                <td>
+                                    <span class="badge me-2" style="background-color: {{ budget.color }}">
+                                        {{ budget.icono }}
+                                    </span>
+                                    <strong>{{ budget.categoria_nombre }}</strong>
+                                </td>
+                                <td class="fw-bold">${{ "{:,.0f}".format(budget.monto_maximo) }}</td>
+                                <td class="fw-bold text-danger">${{ "{:,.0f}".format(budget.gasto_actual) }}</td>
+                                <td class="fw-bold {% if budget.saldo_restante >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    ${{ "{:,.0f}".format(budget.saldo_restante) }}
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress flex-grow-1 me-2" style="height: 20px;">
+                                            {% set percentage = budget.porcentaje_uso %}
+                                            <div class="progress-bar 
+                                                {% if percentage <= 70 %}bg-success
+                                                {% elif percentage <= 90 %}bg-warning
+                                                {% else %}bg-danger{% endif %}" 
+                                                role="progressbar" 
+                                                style="width: {{ percentage if percentage <= 100 else 100 }}%;"
+                                                aria-valuenow="{{ percentage }}" 
+                                                aria-valuemin="0" 
+                                                aria-valuemax="100">
+                                                {% if percentage > 100 %}+100%{% else %}{{ "%.1f"|format(percentage) }}%{% endif %}
+                                            </div>
+                                        </div>
+                                        <small class="text-muted nowrap">
+                                            {{ "%.1f"|format(percentage) }}%
+                                        </small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary edit-budget" 
+                                                data-budget-id="{{ budget.id }}"
+                                                data-budget-amount="{{ budget.monto_maximo }}"
+                                                title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger delete-budget" 
+                                                data-budget-id="{{ budget.id }}"
+                                                title="Eliminar">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-chart-pie fa-3x mb-3"></i>
+                    <p>No hay presupuestos configurados para este mes</p>
+                    <a href="{{ url_for('budgets.index') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>
+                        Crear Primer Presupuesto
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar presupuesto -->
+<div class="modal fade" id="editBudgetModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Presupuesto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editBudgetForm">
+                    <div class="mb-3">
+                        <label for="edit_monto_maximo" class="form-label">Nuevo Monto Máximo</label>
+                        <input type="number" class="form-control" id="edit_monto_maximo" 
+                               step="0.01" min="0.01" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="saveBudgetChanges">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentBudgetId = null;
+    
+    // Editar presupuesto
+    document.querySelectorAll('.edit-budget').forEach(button => {
+        button.addEventListener('click', function() {
+            currentBudgetId = this.getAttribute('data-budget-id');
+            const currentAmount = this.getAttribute('data-budget-amount');
+            
+            document.getElementById('edit_monto_maximo').value = currentAmount;
+            
+            const modal = new bootstrap.Modal(document.getElementById('editBudgetModal'));
+            modal.show();
+        });
+    });
+    
+    // Guardar cambios del presupuesto
+    document.getElementById('saveBudgetChanges').addEventListener('click', function() {
+        const newAmount = document.getElementById('edit_monto_maximo').value;
+        
+        if (!newAmount || newAmount <= 0) {
+            alert('Por favor ingresa un monto válido');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('monto_maximo', newAmount);
+        
+        fetch(`/budgets/update/${currentBudgetId}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error al actualizar el presupuesto: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error al actualizar el presupuesto: ' + error);
+        });
+    });
+    
+    // Eliminar presupuesto
+    document.querySelectorAll('.delete-budget').forEach(button => {
+        button.addEventListener('click', function() {
+            const budgetId = this.getAttribute('data-budget-id');
+            
+            if (confirm('¿Estás seguro de que quieres eliminar este presupuesto?')) {
+                fetch(`/budgets/delete/${budgetId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error al eliminar el presupuesto: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    alert('Error al eliminar el presupuesto: ' + error);
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

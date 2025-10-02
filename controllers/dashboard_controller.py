@@ -1,7 +1,8 @@
-from flask import Blueprint, render_template, request, request, session, redirect, url_for, jsonify
+from flask import Blueprint, render_template, request, session, redirect, url_for, jsonify
 from models.dashboard import DashboardModel
 from models.income import IncomeModel
 from models.expense import ExpenseModel
+from models.savings import SavingsModel  # ← NUEVO: Importar modelo de ahorros
 from utils.helpers import decimal_to_float
 from datetime import datetime
 
@@ -11,12 +12,14 @@ class DashboardController:
         self.dashboard_model = DashboardModel()
         self.income_model = IncomeModel()
         self.expense_model = ExpenseModel()
+        self.savings_model = SavingsModel()  # ← NUEVO: Instancia de ahorros
         self.register_routes()
 
     def register_routes(self):
         self.bp.route('/')(self.index)
         self.bp.route('/api/summary')(self.api_summary)
         self.bp.route('/api/expenses-by-category')(self.api_expenses_by_category)
+        self.bp.route('/api/savings-progress')(self.api_savings_progress)  # ← NUEVO: Ruta para ahorros
 
     def index(self):
         """Página principal del dashboard"""
@@ -31,6 +34,7 @@ class DashboardController:
         summary = self.dashboard_model.get_monthly_summary(user_id, current_month, current_year)
         expenses_by_category = self.dashboard_model.get_expenses_by_category(user_id, current_month, current_year)
         recent_transactions = self.dashboard_model.get_recent_transactions(user_id, 5)
+        savings_summary = self.savings_model.get_savings_summary(user_id)  # ← NUEVO: Resumen de ahorros
         
         # Obtener últimos ingresos y gastos
         recent_incomes = self.income_model.get_by_user(user_id, current_month, current_year)[:3]
@@ -41,7 +45,8 @@ class DashboardController:
                              expenses_by_category=expenses_by_category,
                              recent_transactions=recent_transactions,
                              recent_incomes=recent_incomes,
-                             recent_expenses=recent_expenses)
+                             recent_expenses=recent_expenses,
+                             savings_summary=savings_summary)  # ← NUEVO: Pasar resumen de ahorros
 
     def api_summary(self):
         """API para obtener resumen mensual (AJAX)"""
@@ -76,6 +81,21 @@ class DashboardController:
             expense['total'] = decimal_to_float(expense['total'])
         
         return jsonify(expenses)
+
+    def api_savings_progress(self):
+        """API para obtener progreso de ahorros (AJAX)"""
+        if 'user_id' not in session:
+            return jsonify({'error': 'No autorizado'}), 401
+        
+        user_id = session['user_id']
+        savings_summary = self.savings_model.get_savings_summary(user_id)
+        
+        # Convertir decimales a float
+        for key, value in savings_summary.items():
+            if isinstance(value, (int, float)):
+                savings_summary[key] = decimal_to_float(value)
+        
+        return jsonify(savings_summary)
 
 # Crear instancia del controlador
 dashboard_controller = DashboardController()

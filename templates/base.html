@@ -66,7 +66,7 @@
                             <a class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}" 
                                href="{{ url_for('dashboard.index') }}">
                                 <i class="fas fa-tachometer-alt me-2"></i>
-                                Dashboard
+                                Panel de Control
                             </a>
                         </li>
                         <li class="nav-item">
@@ -77,19 +77,19 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link" href="{{ url_for('expenses.index') }}">
                                 <i class="fas fa-receipt me-2"></i>
                                 Gastos
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link {% if request.endpoint == 'budgets.index' %}active{% endif %}" href="{{ url_for('budgets.index') }}">
                                 <i class="fas fa-chart-pie me-2"></i>
                                 Presupuestos
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link {% if request.endpoint == 'savings.index' %}active{% endif %}" href="{{ url_for('savings.index') }}">
                                 <i class="fas fa-piggy-bank me-2"></i>
                                 Ahorros
                             </a>

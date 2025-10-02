@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+
+{% block title %}Ahorros - Presupuesto Personal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-piggy-bank me-2"></i>
+        Mis Ahorros
+    </h1>
+</div>
+
+<!-- Resumen de Ahorros -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h6 class="card-title">Total Ahorrado</h6>
+                <h3 class="mb-0">${{ "{:,.0f}".format(summary.total_ahorrado) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h6 class="card-title">Meta Total</h6>
+                <h3 class="mb-0">${{ "{:,.0f}".format(summary.total_meta) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h6 class="card-title">Progreso Total</h6>
+                <h3 class="mb-0">{{ summary.porcentaje_total }}%</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h6 class="card-title">Metas Activas</h6>
+                <h3 class="mb-0">{{ summary.total_metas }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Formulario para agregar metas de ahorro -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Nueva Meta de Ahorro
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('savings.add') }}">
+                    <div class="mb-3">
+                        <label for="concepto" class="form-label">Concepto *</label>
+                        <input type="text" class="form-control" id="concepto" name="concepto" 
+                               placeholder="Ej: Viaje a la playa, Nuevo carro..." required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="meta_total" class="form-label">Meta Total *</label>
+                        <input type="number" class="form-control" id="meta_total" name="meta_total" 
+                               step="0.01" min="0.01" placeholder="0.00" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="fecha_objetivo" class="form-label">Fecha Objetivo</label>
+                        <input type="date" class="form-control" id="fecha_objetivo" name="fecha_objetivo">
+                        <div class="form-text">Opcional. Si no especificas, se usará 3 meses desde hoy.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" 
+                                  rows="3" placeholder="Detalles de tu meta..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-save me-2"></i>
+                        Crear Meta
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de metas de ahorro -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    Mis Metas de Ahorro
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if savings %}
+                <div class="row">
+                    {% for saving in savings %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100 
+                            {% if saving.completado %} 
+                                border-success
+                            {% elif saving.dias_restantes is defined and saving.dias_restantes < 0 %} 
+                                border-danger
+                            {% else %} 
+                                border-primary
+                            {% endif %}">
+                            
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title">{{ saving.concepto }}</h5>
+                                    <span class="badge 
+                                        {% if saving.completado %} 
+                                            bg-success
+                                        {% elif saving.dias_restantes is defined and saving.dias_restantes < 0 %} 
+                                            bg-danger
+                                        {% else %} 
+                                            bg-primary
+                                        {% endif %}">
+                                        
+                                        {% if saving.completado %}
+                                            Completado
+                                        {% elif saving.dias_restantes is defined and saving.dias_restantes < 0 %}
+                                            Vencido
+                                        {% else %}
+                                            Activo
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                
+                                {% if saving.descripcion %}
+                                <p class="card-text text-muted small">{{ saving.descripcion }}</p>
+                                {% endif %}
+                                
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <small>Progreso: {{ saving.porcentaje_completado }}%</small>
+                                        <small>${{ "{:,.0f}".format(saving.ahorrado_actual) }} / ${{ "{:,.0f}".format(saving.meta_total) }}</small>
+                                    </div>
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar 
+                                            {% if saving.porcentaje_completado >= 100 %} 
+                                                bg-success
+                                            {% elif saving.dias_restantes is defined and saving.dias_restantes < 0 %} 
+                                                bg-danger
+                                            {% else %} 
+                                                bg-primary
+                                            {% endif %}" 
+                                            
+                                            role="progressbar" 
+                                            style="width: {{ saving.porcentaje_completado }}%;"
+                                            aria-valuenow="{{ saving.porcentaje_completado }}" 
+                                            aria-valuemin="0" 
+                                            aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row text-center small">
+                                    <div class="col-6">
+                                        <strong>Inicio</strong><br>
+                                        {% if saving.fecha_inicio %}
+                                            {{ saving.fecha_inicio.strftime('%d/%m/%Y') }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-6">
+                                        <strong>Objetivo</strong><br>
+                                        {% if saving.fecha_objetivo %}
+                                            {{ saving.fecha_objetivo.strftime('%d/%m/%Y') }}
+                                        {% else %}
+                                            Sin fecha
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                {% if saving.dias_restantes is defined %}
+                                <div class="text-center mt-2">
+                                    <small class="text-muted">
+                                        {% if saving.dias_restantes > 0 %}
+                                            {{ saving.dias_restantes }} días restantes
+                                        {% elif saving.dias_restantes < 0 %}
+                                            <span class="text-danger">{{ saving.dias_restantes * -1 }} días vencidos</span>
+                                        {% else %}
+                                            ¡Hoy es el día!
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="mt-3">
+                                    {% if not saving.completado %}
+                                    <form class="d-flex mb-2 add-money-form" data-saving-id="{{ saving.id }}">
+                                        <input type="number" class="form-control form-control-sm me-2" 
+                                               step="0.01" min="0.01" placeholder="Monto" required>
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    
+                                    <div class="btn-group w-100">
+                                        <button class="btn btn-outline-primary btn-sm edit-saving" 
+                                                data-saving-id="{{ saving.id }}"
+                                                data-concepto="{{ saving.concepto }}"
+                                                data-meta-total="{{ saving.meta_total }}"
+                                                data-fecha-objetivo="{% if saving.fecha_objetivo %}{{ saving.fecha_objetivo.strftime('%Y-%m-%d') }}{% endif %}"
+                                                data-descripcion="{{ saving.descripcion or '' }}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm delete-saving" 
+                                                data-saving-id="{{ saving.id }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-piggy-bank fa-3x mb-3"></i>
+                    <p>No tienes metas de ahorro activas</p>
+                    <p class="small">Crea tu primera meta usando el formulario a la izquierda</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar meta de ahorro -->
+<div class="modal fade" id="editSavingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Meta de Ahorro</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editSavingForm">
+                    <div class="mb-3">
+                        <label for="edit_concepto" class="form-label">Concepto *</label>
+                        <input type="text" class="form-control" id="edit_concepto" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_meta_total" class="form-label">Meta Total *</label>
+                        <input type="number" class="form-control" id="edit_meta_total" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_fecha_objetivo" class="form-label">Fecha Objetivo</label>
+                        <input type="date" class="form-control" id="edit_fecha_objetivo">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_descripcion" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="edit_descripcion" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="saveSavingChanges">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentSavingId = null;
+    
+    // Agregar dinero a meta de ahorro
+    document.querySelectorAll('.add-money-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const savingId = this.getAttribute('data-saving-id');
+            const montoInput = this.querySelector('input[type="number"]');
+            const monto = montoInput.value;
+            
+            if (!monto || monto <= 0) {
+                alert('Por favor ingresa un monto válido');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('monto', monto);
+            
+            fetch(`/savings/add-money/${savingId}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error al agregar dinero: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Error al agregar dinero: ' + error);
+            });
+        });
+    });
+    
+    // Editar meta de ahorro
+    document.querySelectorAll('.edit-saving').forEach(button => {
+        button.addEventListener('click', function() {
+            currentSavingId = this.getAttribute('data-saving-id');
+            const concepto = this.getAttribute('data-concepto');
+            const metaTotal = this.getAttribute('data-meta-total');
+            const fechaObjetivo = this.getAttribute('data-fecha-objetivo');
+            const descripcion = this.getAttribute('data-descripcion');
+            
+            document.getElementById('edit_concepto').value = concepto;
+            document.getElementById('edit_meta_total').value = metaTotal;
+            document.getElementById('edit_fecha_objetivo').value = fechaObjetivo;
+            document.getElementById('edit_descripcion').value = descripcion;
+            
+            const modal = new bootstrap.Modal(document.getElementById('editSavingModal'));
+            modal.show();
+        });
+    });
+    
+    // Guardar cambios de meta de ahorro
+    document.getElementById('saveSavingChanges').addEventListener('click', function() {
+        const concepto = document.getElementById('edit_concepto').value;
+        const metaTotal = document.getElementById('edit_meta_total').value;
+        const fechaObjetivo = document.getElementById('edit_fecha_objetivo').value;
+        const descripcion = document.getElementById('edit_descripcion').value;
+        
+        if (!concepto || !metaTotal) {
+            alert('Por favor completa los campos obligatorios');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('concepto', concepto);
+        formData.append('meta_total', metaTotal);
+        formData.append('fecha_objetivo', fechaObjetivo);
+        formData.append('descripcion', descripcion);
+        
+        fetch(`/savings/update/${currentSavingId}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error al actualizar la meta: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error al actualizar la meta: ' + error);
+        });
+    });
+    
+    // Eliminar meta de ahorro
+    document.querySelectorAll('.delete-saving').forEach(button => {
+        button.addEventListener('click', function() {
+            const savingId = this.getAttribute('data-saving-id');
+            
+            if (confirm('¿Estás seguro de que quieres eliminar esta meta de ahorro?')) {
+                fetch(`/savings/delete/${savingId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error al eliminar la meta: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    alert('Error al eliminar la meta: ' + error);
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
