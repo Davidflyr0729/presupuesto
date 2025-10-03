@@ -1,0 +1,31 @@
+/* Layout principal fijo */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 1rem;
+    min-height: calc(100vh - 56px);
+}
+
+/* Sidebar fijo */
+.sidebar-fixed {
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+    background: #f8f9fa;
+    padding: 1rem;
+}
+
+/* Contenido principal con grid */
+.main-content-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem;
+    align-content: start;
+}
+
+/* Tarjetas */
+.dashboard-card {
+    height: fit-content;
+}
