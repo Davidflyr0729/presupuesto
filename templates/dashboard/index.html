@@ -17,64 +17,100 @@
 
 <!-- Summary Cards -->
 <div class="row">
+    <!-- Ingresos Totales -->
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-success shadow h-100 py-2">
+        <div class="card income-card text-white shadow h-100 py-2">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Ingresos Totales</div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">${{ "{:,.0f}".format(total_ingresos) }}</div>
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">INGRESOS TOTALES</div>
+                        <div class="h5 mb-0 font-weight-bold">${{ "{:,.0f}".format(total_ingresos) }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-money-bill-wave fa-2x text-gray-300"></i>
+                        <i class="fas fa-money-bill-wave fa-2x text-white-50"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Gastos Totales -->
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-danger shadow h-100 py-2">
+        <div class="card expense-card text-white shadow h-100 py-2">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Gastos Totales</div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">${{ "{:,.0f}".format(total_gastos) }}</div>
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">GASTOS TOTALES</div>
+                        <div class="h5 mb-0 font-weight-bold">${{ "{:,.0f}".format(total_gastos) }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-receipt fa-2x text-gray-300"></i>
+                        <i class="fas fa-receipt fa-2x text-white-50"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Saldo Actual -->
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-primary shadow h-100 py-2">
+        <div class="card balance-card text-white shadow h-100 py-2">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Saldo Actual</div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">${{ "{:,.0f}".format(saldo) }}</div>
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">SALDO ACTUAL</div>
+                        <div class="h5 mb-0 font-weight-bold">${{ "{:,.0f}".format(saldo) }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-balance-scale fa-2x text-gray-300"></i>
+                        <i class="fas fa-balance-scale fa-2x text-white-50"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Ahorros - Meta -->
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-info shadow h-100 py-2">
+        <div class="card savings-card text-white shadow h-100 py-2">
             <div class="card-body">
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Ingresos Este Mes</div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">${{ "{:,.0f}".format(ingresos_mes) }}</div>
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">MIS AHORROS</div>
+                        
+                        <!-- Barra de Progreso de Ahorros -->
+                        {% if total_ahorros and meta_ahorros and meta_ahorros > 0 %}
+                            {% set progreso_ahorros = (total_ahorros / meta_ahorros * 100) %}
+                            {% set progreso_ahorros = progreso_ahorros|round|int %}
+                        {% else %}
+                            {% set progreso_ahorros = 0 %}
+                        {% endif %}
+                        
+                        <div class="progress mb-2" style="height: 20px; background-color: rgba(255,255,255,0.3);">
+                            <div class="progress-bar bg-white" 
+                                 role="progressbar" 
+                                 style="width: {{ progreso_ahorros }}%; color: #f59e0b;"
+                                 aria-valuenow="{{ progreso_ahorros }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {% if progreso_ahorros > 15 %}{{ progreso_ahorros }}%{% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="h6 mb-0 font-weight-bold">
+                            ${{ "{:,.0f}".format(total_ahorros or 0) }} 
+                            {% if meta_ahorros and meta_ahorros > 0 %}
+                                / ${{ "{:,.0f}".format(meta_ahorros) }}
+                            {% endif %}
+                        </div>
+                        <small class="text-white-50">
+                            {% if meta_ahorros and meta_ahorros > 0 %}
+                                {{ "¡Meta de ahorros alcanzada! 🎉" if total_ahorros >= meta_ahorros else "Progreso de ahorros" }}
+                            {% else %}
+                                Configura tu meta de ahorros
+                            {% endif %}
+                        </small>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                        <i class="fas fa-piggy-bank fa-2x text-white-50"></i>
                     </div>
                 </div>
             </div>
@@ -86,8 +122,8 @@
     <!-- Últimos Ingresos -->
     <div class="col-lg-6 mb-4">
         <div class="card shadow">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-success">
+            <div class="card-header py-3 text-white" style="background: linear-gradient(135deg, #10b981, #059669);">
+                <h6 class="m-0 font-weight-bold">
                     <i class="fas fa-money-bill-wave me-2"></i>
                     Últimos Ingresos
                 </h6>
@@ -124,8 +160,8 @@
     <!-- Últimos Gastos -->
     <div class="col-lg-6 mb-4">
         <div class="card shadow">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-danger">
+            <div class="card-header py-3 text-white" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                <h6 class="m-0 font-weight-bold">
                     <i class="fas fa-receipt me-2"></i>
                     Últimos Gastos
                 </h6>
@@ -160,12 +196,56 @@
     </div>
 </div>
 
+<!-- Metas de Ahorro Activas -->
+{% if metas_activas %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3 text-white" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                <h6 class="m-0 font-weight-bold">
+                    <i class="fas fa-bullseye me-2"></i>
+                    Metas de Ahorro Activas
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for meta in metas_activas %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-warning">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ meta.concepto }}</h6>
+                                <div class="progress mb-2" style="height: 15px;">
+                                    <div class="progress-bar bg-warning" 
+                                         style="width: {{ meta.porcentaje_completado }}%;">
+                                        {{ meta.porcentaje_completado|round|int }}%
+                                    </div>
+                                </div>
+                                <p class="card-text small mb-1">
+                                    <strong>${{ "{:,.0f}".format(meta.ahorrado_actual) }}</strong> 
+                                    de ${{ "{:,.0f}".format(meta.meta_total) }}
+                                </p>
+                                {% if meta.fecha_objetivo %}
+                                <p class="card-text small text-muted mb-0">
+                                    Objetivo: {{ meta.fecha_objetivo.strftime('%d/%m/%Y') }}
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Quick Actions -->
 <div class="row mt-4">
     <div class="col-12">
         <div class="card shadow">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">
+            <div class="card-header py-3 text-white" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                <h6 class="m-0 font-weight-bold">
                     <i class="fas fa-bolt me-2"></i>
                     Acciones Rápidas
                 </h6>
@@ -201,4 +281,31 @@
         </div>
     </div>
 </div>
+
+<!-- CSS Adicional -->
+<style>
+.progress {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.progress-bar {
+    transition: width 0.6s ease;
+    font-weight: bold;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card {
+    border: none;
+    transition: transform 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+</style>
 {% endblock %}

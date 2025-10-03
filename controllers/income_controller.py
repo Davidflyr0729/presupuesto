@@ -39,7 +39,13 @@ class IncomeController:
             conn = self.get_db_connection()
             if not conn:
                 flash('Error de conexión a la base de datos', 'error')
-                return render_template('incomes/index.html', incomes=[], categories=[])
+                return render_template('incomes/index.html', 
+                                     incomes=[], 
+                                     categories=[],
+                                     total_ingresos=0,
+                                     ingresos_este_mes=0,
+                                     total_registros=0,
+                                     active_page='income')
             
             cursor = conn.cursor(dictionary=True)
             
@@ -57,18 +63,59 @@ class IncomeController:
             cursor.execute("SELECT * FROM categorias_ingresos")
             categories = cursor.fetchall()
             
+            # ✅ CALCULAR LOS TOTALES
+            total_ingresos = 0
+            ingresos_este_mes = 0
+            total_registros = len(incomes)
+            
+            # Obtener mes y año actual
+            mes_actual = datetime.now().month
+            año_actual = datetime.now().year
+            
+            for income in incomes:
+                # Sumar al total general
+                total_ingresos += float(income['monto'])
+                
+                # Verificar si es del mes actual
+                fecha_ingreso = income['fecha']
+                
+                # Manejar diferentes formatos de fecha
+                if isinstance(fecha_ingreso, str):
+                    # Si la fecha es string, convertir a datetime
+                    fecha_ingreso = datetime.strptime(fecha_ingreso, '%Y-%m-%d')
+                elif isinstance(fecha_ingreso, datetime):
+                    # Si ya es datetime, usar directamente
+                    pass
+                else:
+                    # Para otros tipos (como date de MySQL), convertir
+                    fecha_ingreso = datetime.combine(fecha_ingreso, datetime.min.time())
+                
+                # Sumar si es del mes actual
+                if fecha_ingreso.month == mes_actual and fecha_ingreso.year == año_actual:
+                    ingresos_este_mes += float(income['monto'])
+            
             cursor.close()
             conn.close()
             
+            # ✅ PASAR TODOS LOS DATOS AL TEMPLATE
             return render_template('incomes/index.html', 
                                  incomes=incomes, 
                                  categories=categories,
+                                 total_ingresos=total_ingresos,
+                                 ingresos_este_mes=ingresos_este_mes,
+                                 total_registros=total_registros,
                                  active_page='income')
             
         except Exception as e:
             print(f"Error en incomes: {e}")
             flash('Error al cargar los ingresos', 'error')
-            return render_template('incomes/index.html', incomes=[], categories=[])
+            return render_template('incomes/index.html', 
+                                 incomes=[], 
+                                 categories=[],
+                                 total_ingresos=0,
+                                 ingresos_este_mes=0,
+                                 total_registros=0,
+                                 active_page='income')
     
     def add_income(self):
         """Agregar nuevo ingreso"""

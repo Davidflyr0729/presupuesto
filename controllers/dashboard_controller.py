@@ -38,7 +38,8 @@ class DashboardController:
                 return render_template('dashboard/index.html',
                                     total_ingresos=0, total_gastos=0, saldo=0,
                                     ingresos_mes=0, gastos_mes=0,
-                                    ultimos_ingresos=[], ultimos_gastos=[])
+                                    ultimos_ingresos=[], ultimos_gastos=[],
+                                    total_ahorros=0, meta_ahorros=0, metas_activas=[])
             
             cursor = conn.cursor(dictionary=True)
             
@@ -74,7 +75,43 @@ class DashboardController:
             gastos_mes_result = cursor.fetchone()
             gastos_mes = gastos_mes_result['total'] if gastos_mes_result['total'] else 0
             
-            # 6. Últimos 5 ingresos
+            # 6. Obtener datos de ahorros - CONSULTA CORREGIDA
+            cursor.execute("""
+                SELECT 
+                    COALESCE(SUM(ahorrado_actual), 0) as total_ahorrado,
+                    COALESCE(SUM(meta_total), 0) as meta_total,
+                    COUNT(*) as total_metas
+                FROM ahorros 
+                WHERE usuario_id = %s AND completado = 0
+            """, (user_id,))
+            ahorros_result = cursor.fetchone()
+            total_ahorros = float(ahorros_result['total_ahorrado']) if ahorros_result and ahorros_result['total_ahorrado'] else 0
+            meta_ahorros = float(ahorros_result['meta_total']) if ahorros_result and ahorros_result['meta_total'] else 0
+            
+            # 7. Obtener metas activas para mostrar (solo las no completadas)
+            cursor.execute("""
+                SELECT 
+                    id,
+                    concepto, 
+                    meta_total, 
+                    ahorrado_actual, 
+                    ROUND((ahorrado_actual / meta_total) * 100, 0) as porcentaje_completado,
+                    fecha_objetivo,
+                    descripcion
+                FROM ahorros 
+                WHERE usuario_id = %s AND completado = 0
+                ORDER BY fecha_objetivo ASC
+                LIMIT 3
+            """, (user_id,))
+            metas_activas = cursor.fetchall()
+            
+            # Convertir decimales a float para las metas activas
+            for meta in metas_activas:
+                meta['meta_total'] = float(meta['meta_total'])
+                meta['ahorrado_actual'] = float(meta['ahorrado_actual'])
+                meta['porcentaje_completado'] = float(meta['porcentaje_completado'])
+            
+            # 8. Últimos 5 ingresos
             cursor.execute("""
                 SELECT i.*, ci.nombre as categoria_nombre, ci.color, ci.icono
                 FROM ingresos i 
@@ -84,7 +121,7 @@ class DashboardController:
             """, (user_id,))
             ultimos_ingresos = cursor.fetchall()
             
-            # 7. Últimos 5 gastos
+            # 9. Últimos 5 gastos
             cursor.execute("""
                 SELECT g.*, cg.nombre as categoria_nombre, cg.color, cg.icono
                 FROM gastos g 
@@ -97,6 +134,14 @@ class DashboardController:
             cursor.close()
             conn.close()
             
+            # Debug: Verificar datos de ahorros
+            print(f"=== DATOS DE AHORROS ===")
+            print(f"Total ahorrado: {total_ahorros}")
+            print(f"Meta total: {meta_ahorros}")
+            print(f"Metas activas encontradas: {len(metas_activas)}")
+            for i, meta in enumerate(metas_activas):
+                print(f"Meta {i+1}: {meta['concepto']} - {meta['porcentaje_completado']}%")
+            
             return render_template('dashboard/index.html',
                                 total_ingresos=total_ingresos,
                                 total_gastos=total_gastos,
@@ -104,13 +149,20 @@ class DashboardController:
                                 ingresos_mes=ingresos_mes,
                                 gastos_mes=gastos_mes,
                                 ultimos_ingresos=ultimos_ingresos,
-                                ultimos_gastos=ultimos_gastos)
+                                ultimos_gastos=ultimos_gastos,
+                                # NUEVAS VARIABLES PARA AHORROS
+                                total_ahorros=total_ahorros,
+                                meta_ahorros=meta_ahorros,
+                                metas_activas=metas_activas)
                                 
         except Exception as e:
             print(f"Error en dashboard: {e}")
+            import traceback
+            traceback.print_exc()
             return render_template('dashboard/index.html',
                                 total_ingresos=0, total_gastos=0, saldo=0,
                                 ingresos_mes=0, gastos_mes=0,
-                                ultimos_ingresos=[], ultimos_gastos=[])
+                                ultimos_ingresos=[], ultimos_gastos=[],
+                                total_ahorros=0, meta_ahorros=0, metas_activas=[])
 
 dashboard_controller = DashboardController()
