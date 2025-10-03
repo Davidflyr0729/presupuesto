@@ -9,6 +9,14 @@
         Mis Ingresos
     </h1>
     <div class="btn-toolbar mb-2 mb-md-0">
+        <!-- Selector de Mes/Año -->
+        <div class="me-2">
+            <input type="month" 
+                   class="form-control form-control-sm" 
+                   id="mesSelector"
+                   value="{{ mes_seleccionado }}"
+                   onchange="cambiarMes(this.value)">
+        </div>
         <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
             <i class="fas fa-sync-alt me-1"></i>
             Actualizar
@@ -21,24 +29,27 @@
     <div class="col-md-4 mb-3">
         <div class="card bg-success text-white">
             <div class="card-body">
-                <h6 class="card-title">Total Ingresos</h6>
+                <h6 class="card-title">Total General</h6>
                 <h3 class="mb-0">${{ "{:,.0f}".format(total_ingresos) if total_ingresos else 0 }}</h3>
+                <small>Acumulado de todos los tiempos</small>
             </div>
         </div>
     </div>
     <div class="col-md-4 mb-3">
         <div class="card bg-primary text-white">
             <div class="card-body">
-                <h6 class="card-title">Ingresos Este Mes</h6>
-                <h3 class="mb-0">${{ "{:,.0f}".format(total_ingresos_mes) if total_ingresos_mes else 0 }}</h3>
+                <h6 class="card-title">Ingresos de {{ mes_seleccionado[5:7] }}/{{ mes_seleccionado[0:4] }}</h6>
+                <h3 class="mb-0">${{ "{:,.0f}".format(ingresos_mes) if ingresos_mes else 0 }}</h3>
+                <small>Total del mes seleccionado</small>
             </div>
         </div>
     </div>
     <div class="col-md-4 mb-3">
         <div class="card bg-warning text-white">
             <div class="card-body">
-                <h6 class="card-title">Total Registros</h6>
+                <h6 class="card-title">Registros</h6>
                 <h3 class="mb-0">{{ total_registros if total_registros else 0 }}</h3>
+                <small>En {{ mes_seleccionado[5:7] }}/{{ mes_seleccionado[0:4] }}</small>
             </div>
         </div>
     </div>
@@ -103,11 +114,14 @@
     <!-- Lista de ingresos -->
     <div class="col-lg-8">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">
                     <i class="fas fa-list me-2"></i>
-                    Historial de Ingresos
+                    Historial de Ingresos - {{ mes_seleccionado[5:7] }}/{{ mes_seleccionado[0:4] }}
                 </h5>
+                <span class="badge bg-primary">
+                    {{ total_registros }} registro{% if total_registros != 1 %}s{% endif %}
+                </span>
             </div>
             <div class="card-body">
                 {% if incomes %}
@@ -165,8 +179,8 @@
                 {% else %}
                 <div class="text-center text-muted py-4">
                     <i class="fas fa-money-bill-wave fa-3x mb-3"></i>
-                    <p>No tienes ingresos registrados</p>
-                    <p class="small">Agrega tu primer ingreso usando el formulario a la izquierda</p>
+                    <p>No hay ingresos registrados en {{ mes_seleccionado[5:7] }}/{{ mes_seleccionado[0:4] }}</p>
+                    <p class="small">Agrega un ingreso usando el formulario a la izquierda</p>
                 </div>
                 {% endif %}
             </div>
@@ -225,6 +239,13 @@
 
 {% block scripts %}
 <script>
+// Función para cambiar el mes seleccionado
+function cambiarMes(mes) {
+    if (mes) {
+        window.location.href = '/income?mes=' + mes;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     let currentIncomeId = null;
     

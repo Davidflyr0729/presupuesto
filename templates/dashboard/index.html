@@ -10,7 +10,9 @@
         Panel de Control
     </h1>
     <div class="month-selector">
-        <span class="badge bg-secondary fs-6">{{ now.strftime('%B %Y') }}</span>
+        <span class="badge bg-secondary fs-6">
+            {{ now.day }} / {{ now.strftime('%b').upper() }} / {{ now.year }}
+        </span>
     </div>
 </div>
 
@@ -296,18 +298,18 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Ajuste del logo del marranito - SUBIRLO MÁS */
+/* Ajuste del logo del marranito - MEJOR ALINEACIÓN */
 .piggy-icon {
-    transform: translateY(-18px) !important;
+    transform: translateY(-12px) !important;
     position: relative;
-    top: -8px;
 }
 
 /* Ajustar el contenedor del icono para mejor alineación */
 .savings-card .col-auto {
     display: flex;
     align-items: flex-start;
-    padding-top: 5px;
+    justify-content: center;
+    height: 100%;
 }
 
 /* Progress Bars */
@@ -357,7 +359,7 @@
     }
     
     .piggy-icon {
-        transform: translateY(-10px) !important;
+        transform: translateY(-8px) !important;
     }
 }
 </style>

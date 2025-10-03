@@ -31,6 +31,7 @@ class DashboardController:
             return redirect(url_for('auth.login'))
         
         user_id = session['user_id']
+        now = datetime.now()
         
         try:
             conn = self.get_db_connection()
@@ -39,25 +40,34 @@ class DashboardController:
                                     total_ingresos=0, total_gastos=0, saldo=0,
                                     ingresos_mes=0, gastos_mes=0,
                                     ultimos_ingresos=[], ultimos_gastos=[],
-                                    total_ahorros=0, meta_ahorros=0, metas_activas=[])
+                                    total_ahorros=0, meta_ahorros=0, metas_activas=[],
+                                    now=now)
             
             cursor = conn.cursor(dictionary=True)
             
-            # 1. Total ingresos
-            cursor.execute("SELECT SUM(monto) as total FROM ingresos WHERE usuario_id = %s", (user_id,))
+            # 1. INGRESOS TOTALES (TODOS los ingresos, sin filtro de año)
+            cursor.execute("""
+                SELECT SUM(monto) as total 
+                FROM ingresos 
+                WHERE usuario_id = %s
+            """, (user_id,))
             total_ingresos_result = cursor.fetchone()
             total_ingresos = total_ingresos_result['total'] if total_ingresos_result['total'] else 0
             
-            # 2. Total gastos
-            cursor.execute("SELECT SUM(monto) as total FROM gastos WHERE usuario_id = %s", (user_id,))
+            # 2. GASTOS TOTALES (TODOS los gastos, sin filtro de año)
+            cursor.execute("""
+                SELECT SUM(monto) as total 
+                FROM gastos 
+                WHERE usuario_id = %s
+            """, (user_id,))
             total_gastos_result = cursor.fetchone()
             total_gastos = total_gastos_result['total'] if total_gastos_result['total'] else 0
             
-            # 3. Calcular saldo
+            # 3. SALDO ACTUAL (ingresos totales - gastos totales)
             saldo = total_ingresos - total_gastos
             
-            # 4. Ingresos del mes actual
-            current_month = datetime.now().strftime('%Y-%m')
+            # 4. INGRESOS DEL MES ACTUAL (para referencia)
+            current_month = now.strftime('%Y-%m')
             cursor.execute("""
                 SELECT SUM(monto) as total 
                 FROM ingresos 
@@ -66,7 +76,7 @@ class DashboardController:
             ingresos_mes_result = cursor.fetchone()
             ingresos_mes = ingresos_mes_result['total'] if ingresos_mes_result['total'] else 0
             
-            # 5. Gastos del mes actual
+            # 5. GASTOS DEL MES ACTUAL (para referencia)
             cursor.execute("""
                 SELECT SUM(monto) as total 
                 FROM gastos 
@@ -75,7 +85,7 @@ class DashboardController:
             gastos_mes_result = cursor.fetchone()
             gastos_mes = gastos_mes_result['total'] if gastos_mes_result['total'] else 0
             
-            # 6. Obtener datos de ahorros - CONSULTA CORREGIDA
+            # 6. DATOS DE AHORROS
             cursor.execute("""
                 SELECT 
                     COALESCE(SUM(ahorrado_actual), 0) as total_ahorrado,
@@ -88,7 +98,7 @@ class DashboardController:
             total_ahorros = float(ahorros_result['total_ahorrado']) if ahorros_result and ahorros_result['total_ahorrado'] else 0
             meta_ahorros = float(ahorros_result['meta_total']) if ahorros_result and ahorros_result['meta_total'] else 0
             
-            # 7. Obtener metas activas para mostrar (solo las no completadas)
+            # 7. METAS ACTIVAS
             cursor.execute("""
                 SELECT 
                     id,
@@ -105,13 +115,13 @@ class DashboardController:
             """, (user_id,))
             metas_activas = cursor.fetchall()
             
-            # Convertir decimales a float para las metas activas
+            # Convertir decimales a float
             for meta in metas_activas:
                 meta['meta_total'] = float(meta['meta_total'])
                 meta['ahorrado_actual'] = float(meta['ahorrado_actual'])
                 meta['porcentaje_completado'] = float(meta['porcentaje_completado'])
             
-            # 8. Últimos 5 ingresos
+            # 8. ÚLTIMOS 5 INGRESOS (más recientes, sin filtro de año)
             cursor.execute("""
                 SELECT i.*, ci.nombre as categoria_nombre, ci.color, ci.icono
                 FROM ingresos i 
@@ -121,7 +131,7 @@ class DashboardController:
             """, (user_id,))
             ultimos_ingresos = cursor.fetchall()
             
-            # 9. Últimos 5 gastos
+            # 9. ÚLTIMOS 5 GASTOS (más recientes, sin filtro de año)
             cursor.execute("""
                 SELECT g.*, cg.nombre as categoria_nombre, cg.color, cg.icono
                 FROM gastos g 
@@ -134,14 +144,6 @@ class DashboardController:
             cursor.close()
             conn.close()
             
-            # Debug: Verificar datos de ahorros
-            print(f"=== DATOS DE AHORROS ===")
-            print(f"Total ahorrado: {total_ahorros}")
-            print(f"Meta total: {meta_ahorros}")
-            print(f"Metas activas encontradas: {len(metas_activas)}")
-            for i, meta in enumerate(metas_activas):
-                print(f"Meta {i+1}: {meta['concepto']} - {meta['porcentaje_completado']}%")
-            
             return render_template('dashboard/index.html',
                                 total_ingresos=total_ingresos,
                                 total_gastos=total_gastos,
@@ -150,10 +152,10 @@ class DashboardController:
                                 gastos_mes=gastos_mes,
                                 ultimos_ingresos=ultimos_ingresos,
                                 ultimos_gastos=ultimos_gastos,
-                                # NUEVAS VARIABLES PARA AHORROS
                                 total_ahorros=total_ahorros,
                                 meta_ahorros=meta_ahorros,
-                                metas_activas=metas_activas)
+                                metas_activas=metas_activas,
+                                now=now)
                                 
         except Exception as e:
             print(f"Error en dashboard: {e}")
@@ -163,6 +165,7 @@ class DashboardController:
                                 total_ingresos=0, total_gastos=0, saldo=0,
                                 ingresos_mes=0, gastos_mes=0,
                                 ultimos_ingresos=[], ultimos_gastos=[],
-                                total_ahorros=0, meta_ahorros=0, metas_activas=[])
+                                total_ahorros=0, meta_ahorros=0, metas_activas=[],
+                                now=datetime.now())
 
 dashboard_controller = DashboardController()

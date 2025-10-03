@@ -43,56 +43,47 @@ class IncomeController:
                                      incomes=[], 
                                      categories=[],
                                      total_ingresos=0,
-                                     ingresos_este_mes=0,
+                                     ingresos_mes=0,
                                      total_registros=0,
-                                     active_page='income')
+                                     active_page='income',
+                                     mes_actual=datetime.now().strftime('%Y-%m'),
+                                     mes_seleccionado=datetime.now().strftime('%Y-%m'))
             
             cursor = conn.cursor(dictionary=True)
             
-            # Obtener ingresos del usuario
+            # Obtener el mes seleccionado (por defecto mes actual)
+            mes_seleccionado = request.args.get('mes', datetime.now().strftime('%Y-%m'))
+            año, mes = mes_seleccionado.split('-')
+            
+            # Obtener ingresos del mes seleccionado
             cursor.execute("""
                 SELECT i.*, ci.nombre as categoria_nombre, ci.color, ci.icono
                 FROM ingresos i 
                 LEFT JOIN categorias_ingresos ci ON i.categoria_id = ci.id 
-                WHERE i.usuario_id = %s
+                WHERE i.usuario_id = %s AND YEAR(i.fecha) = %s AND MONTH(i.fecha) = %s
                 ORDER BY i.fecha DESC
-            """, (user_id,))
+            """, (user_id, año, mes))
             incomes = cursor.fetchall()
             
             # Obtener categorías
             cursor.execute("SELECT * FROM categorias_ingresos")
             categories = cursor.fetchall()
             
-            # ✅ CALCULAR LOS TOTALES
-            total_ingresos = 0
-            ingresos_este_mes = 0
+            # ✅ CALCULAR LOS TOTALES DEL MES SELECCIONADO
+            total_ingresos_mes = 0
             total_registros = len(incomes)
             
-            # Obtener mes y año actual
-            mes_actual = datetime.now().month
-            año_actual = datetime.now().year
-            
             for income in incomes:
-                # Sumar al total general
-                total_ingresos += float(income['monto'])
-                
-                # Verificar si es del mes actual
-                fecha_ingreso = income['fecha']
-                
-                # Manejar diferentes formatos de fecha
-                if isinstance(fecha_ingreso, str):
-                    # Si la fecha es string, convertir a datetime
-                    fecha_ingreso = datetime.strptime(fecha_ingreso, '%Y-%m-%d')
-                elif isinstance(fecha_ingreso, datetime):
-                    # Si ya es datetime, usar directamente
-                    pass
-                else:
-                    # Para otros tipos (como date de MySQL), convertir
-                    fecha_ingreso = datetime.combine(fecha_ingreso, datetime.min.time())
-                
-                # Sumar si es del mes actual
-                if fecha_ingreso.month == mes_actual and fecha_ingreso.year == año_actual:
-                    ingresos_este_mes += float(income['monto'])
+                total_ingresos_mes += float(income['monto'])
+            
+            # ✅ OBTENER TOTAL GENERAL DE TODOS LOS INGRESOS (para contexto)
+            cursor.execute("""
+                SELECT COALESCE(SUM(monto), 0) as total_general 
+                FROM ingresos 
+                WHERE usuario_id = %s
+            """, (user_id,))
+            total_general_result = cursor.fetchone()
+            total_ingresos_general = float(total_general_result['total_general']) if total_general_result else 0
             
             cursor.close()
             conn.close()
@@ -101,10 +92,12 @@ class IncomeController:
             return render_template('incomes/index.html', 
                                  incomes=incomes, 
                                  categories=categories,
-                                 total_ingresos=total_ingresos,
-                                 ingresos_este_mes=ingresos_este_mes,
-                                 total_registros=total_registros,
-                                 active_page='income')
+                                 total_ingresos=total_ingresos_general,  # Total general
+                                 ingresos_mes=total_ingresos_mes,        # Total del mes seleccionado
+                                 total_registros=total_registros,        # Registros del mes seleccionado
+                                 active_page='income',
+                                 mes_actual=datetime.now().strftime('%Y-%m'),
+                                 mes_seleccionado=mes_seleccionado)
             
         except Exception as e:
             print(f"Error en incomes: {e}")
@@ -113,9 +106,11 @@ class IncomeController:
                                  incomes=[], 
                                  categories=[],
                                  total_ingresos=0,
-                                 ingresos_este_mes=0,
+                                 ingresos_mes=0,
                                  total_registros=0,
-                                 active_page='income')
+                                 active_page='income',
+                                 mes_actual=datetime.now().strftime('%Y-%m'),
+                                 mes_seleccionado=datetime.now().strftime('%Y-%m'))
     
     def add_income(self):
         """Agregar nuevo ingreso"""

@@ -5,15 +5,15 @@ from datetime import datetime
 
 class ExpenseController:
     def __init__(self):
-        self.bp = Blueprint('expenses', __name__)
+        self.bp = Blueprint('expenses', __name__, url_prefix='/expenses')
         self.expense_model = ExpenseModel()
         self.register_routes()
 
     def register_routes(self):
-        self.bp.route('/expenses')(self.index)
-        self.bp.route('/expenses/add', methods=['POST'])(self.add)
-        self.bp.route('/expenses/delete/<int:expense_id>', methods=['POST'])(self.delete)
-        self.bp.route('/api/expenses')(self.api_expenses)
+        self.bp.route('/')(self.index)
+        self.bp.route('/add', methods=['POST'])(self.add)
+        self.bp.route('/delete/<int:expense_id>', methods=['POST'])(self.delete)
+        self.bp.route('/api')(self.api_expenses)
 
     def index(self):
         """Página de listado de gastos"""
@@ -21,19 +21,38 @@ class ExpenseController:
             return redirect(url_for('auth.login'))
         
         user_id = session['user_id']
-        month = request.args.get('month', datetime.now().month, type=int)
-        year = request.args.get('year', datetime.now().year, type=int)
         
-        expenses = self.expense_model.get_by_user(user_id, month, year)
+        # Obtener mes seleccionado (por defecto mes actual)
+        mes_seleccionado = request.args.get('mes', datetime.now().strftime('%Y-%m'))
+        
+        try:
+            año, mes = mes_seleccionado.split('-')
+            año = int(año)
+            mes = int(mes)
+        except (ValueError, AttributeError):
+            # Si hay error en el formato, usar mes actual
+            ahora = datetime.now()
+            mes_seleccionado = ahora.strftime('%Y-%m')
+            año = ahora.year
+            mes = ahora.month
+        
+        # Obtener datos del mes seleccionado
+        expenses = self.expense_model.get_by_user(user_id, mes, año)
         categories = self.expense_model.get_categories()
-        total = self.expense_model.get_total(user_id, month, year)
+        total_mes = self.expense_model.get_total(user_id, mes, año)
+        
+        # Obtener total general de todos los gastos (sin filtro de mes)
+        total_general = self.expense_model.get_total(user_id)
+        total_registros = len(expenses)
         
         return render_template('transactions/expenses.html',
                              expenses=expenses,
                              categories=categories,
-                             total=total,
-                             current_month=month,
-                             current_year=year)
+                             total_mes=total_mes,
+                             total_general=total_general,
+                             total_registros=total_registros,
+                             mes_seleccionado=mes_seleccionado,
+                             now=datetime.now())
 
     def add(self):
         """Agregar nuevo gasto"""

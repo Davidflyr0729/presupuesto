@@ -9,31 +9,47 @@
         Gastos
     </h1>
     <div class="btn-toolbar mb-2 mb-md-0">
-        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-            <i class="fas fa-calendar me-1"></i>
-            {{ current_month }}/{{ current_year }}
+        <!-- Selector de Mes/Año -->
+        <div class="me-2">
+            <input type="month" 
+                   class="form-control form-control-sm" 
+                   id="mesSelector"
+                   value="{{ mes_seleccionado }}"
+                   onchange="cambiarMes(this.value)">
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+            <i class="fas fa-sync-alt me-1"></i>
+            Actualizar
         </button>
-        <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="#">Action</a></li>
-            <li><a class="dropdown-item" href="#">Another action</a></li>
-        </ul>
     </div>
 </div>
 
 <!-- Resumen -->
 <div class="row mb-4">
-    <div class="col-12">
+    <div class="col-md-4 mb-3">
         <div class="card bg-danger text-white">
             <div class="card-body">
-                <div class="row">
-                    <div class="col">
-                        <h5 class="card-title">Total Gastado</h5>
-                        <h2 class="mb-0">${{ "{:,.0f}".format(total) }}</h2>
-                    </div>
-                    <div class="col-auto">
-                        <i class="fas fa-receipt fa-3x"></i>
-                    </div>
-                </div>
+                <h6 class="card-title">Total General</h6>
+                <h3 class="mb-0">${{ "{:,.0f}".format(total_general) if total_general else 0 }}</h3>
+                <small>Acumulado de todos los tiempos</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card bg-dark text-white">
+            <div class="card-body">
+                <h6 class="card-title">Gastos de {{ mes_seleccionado[5:7] }}/{{ mes_seleccionado[0:4] }}</h6>
+                <h3 class="mb-0">${{ "{:,.0f}".format(total_mes) if total_mes else 0 }}</h3>
+                <small>Total del mes seleccionado</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card bg-secondary text-white">
+            <div class="card-body">
+                <h6 class="card-title">Registros</h6>
+                <h3 class="mb-0">{{ total_registros if total_registros else 0 }}</h3>
+                <small>En {{ mes_seleccionado[5:7] }}/{{ mes_seleccionado[0:4] }}</small>
             </div>
         </div>
     </div>
@@ -104,11 +120,14 @@
     <!-- Lista de gastos -->
     <div class="col-lg-8">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">
                     <i class="fas fa-list me-2"></i>
-                    Lista de Gastos
+                    Historial de Gastos - {{ mes_seleccionado[5:7] }}/{{ mes_seleccionado[0:4] }}
                 </h5>
+                <span class="badge bg-danger">
+                    {{ total_registros }} registro{% if total_registros != 1 %}s{% endif %}
+                </span>
             </div>
             <div class="card-body">
                 {% if expenses %}
@@ -139,7 +158,7 @@
                                     </span>
                                 </td>
                                 <td class="fw-bold text-danger">${{ "{:,.0f}".format(expense.monto) }}</td>
-                                <td>{{ expense.fecha.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ expense.fecha.strftime('%d/%m/%Y') if expense.fecha else '' }}</td>
                                 <td>
                                     {% if expense.esencial %}
                                     <span class="badge bg-success">Sí</span>
@@ -161,11 +180,8 @@
                 {% else %}
                 <div class="text-center text-muted py-4">
                     <i class="fas fa-receipt fa-3x mb-3"></i>
-                    <p>No hay gastos registrados este mes</p>
-                    <a href="{{ url_for('expenses.index') }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>
-                        Agregar Primer Gasto
-                    </a>
+                    <p>No hay gastos registrados en {{ mes_seleccionado[5:7] }}/{{ mes_seleccionado[0:4] }}</p>
+                    <p class="small">Agrega un gasto usando el formulario a la izquierda</p>
                 </div>
                 {% endif %}
             </div>
@@ -176,6 +192,13 @@
 
 {% block scripts %}
 <script>
+// Función para cambiar el mes seleccionado
+function cambiarMes(mes) {
+    if (mes) {
+        window.location.href = '/expenses?mes=' + mes;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Eliminar gastos
     document.querySelectorAll('.delete-expense').forEach(button => {
