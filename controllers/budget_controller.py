@@ -6,18 +6,18 @@ from datetime import datetime
 
 class BudgetController:
     def __init__(self):
-        self.bp = Blueprint('budgets', __name__)
+        self.bp = Blueprint('budgets', __name__, url_prefix='/budgets')  # ← CORREGIDO: agregado url_prefix
         self.budget_model = BudgetModel()
         self.expense_model = ExpenseModel()
         self.register_routes()
 
     def register_routes(self):
-        self.bp.route('/budgets')(self.index)
-        self.bp.route('/budgets/add', methods=['POST'])(self.add)
-        self.bp.route('/budgets/update/<int:budget_id>', methods=['POST'])(self.update)
-        self.bp.route('/budgets/delete/<int:budget_id>', methods=['POST'])(self.delete)
-        self.bp.route('/api/budgets')(self.api_budgets)
-        self.bp.route('/api/budget-progress')(self.api_budget_progress)
+        self.bp.route('/')(self.index)  # ← CORREGIDO: cambiado de '/budgets' a '/'
+        self.bp.route('/add', methods=['POST'])(self.add)  # ← CORREGIDO: cambiado de '/budgets/add' a '/add'
+        self.bp.route('/update/<int:budget_id>', methods=['POST'])(self.update)
+        self.bp.route('/delete/<int:budget_id>', methods=['POST'])(self.delete)
+        self.bp.route('/api')(self.api_budgets)
+        self.bp.route('/api/progress')(self.api_budget_progress)
 
     def index(self):
         """Página de listado de presupuestos"""
@@ -41,7 +41,8 @@ class BudgetController:
                              expense_categories=expense_categories,
                              summary=summary,
                              current_month=month,
-                             current_year=year)
+                             current_year=year,
+                             now=datetime.now())  # ← AGREGADO: para usar en el template
 
     def add(self):
         """Agregar nuevo presupuesto"""
@@ -59,8 +60,10 @@ class BudgetController:
             
             try:
                 user_id = session['user_id']
+                # Limpiar formato del monto (remover puntos de separadores de miles)
+                monto_maximo_limpio = monto_maximo.replace('.', '')
                 budget_id = self.budget_model.create(
-                    user_id, int(categoria_gasto_id), float(monto_maximo), mes_year
+                    user_id, int(categoria_gasto_id), float(monto_maximo_limpio), mes_year
                 )
                 flash('¡Presupuesto agregado exitosamente!', 'success')
             except Exception as e:
@@ -81,7 +84,9 @@ class BudgetController:
             
             try:
                 user_id = session['user_id']
-                self.budget_model.update(budget_id, user_id, float(monto_maximo))
+                # Limpiar formato del monto (remover puntos de separadores de miles)
+                monto_maximo_limpio = monto_maximo.replace('.', '')
+                self.budget_model.update(budget_id, user_id, float(monto_maximo_limpio))
                 flash('¡Presupuesto actualizado exitosamente!', 'success')
                 return jsonify({'success': True})
             except Exception as e:

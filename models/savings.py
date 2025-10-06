@@ -40,23 +40,46 @@ class SavingsModel:
 
     def add_savings(self, ahorro_id, usuario_id, monto):
         """Agregar dinero al ahorro"""
+        # Primero obtener el estado actual del ahorro
+        current_saving = self.get_by_id(ahorro_id, usuario_id)
+        if not current_saving:
+            raise Exception("Ahorro no encontrado")
+        
+        ahorrado_actual = float(current_saving['ahorrado_actual'])
+        meta_total = float(current_saving['meta_total'])
+        nuevo_ahorrado = ahorrado_actual + monto
+        
+        # ✅ CORREGIDO: Usar cálculo preciso para determinar si está completado
+        # Usamos una pequeña tolerancia para evitar problemas de redondeo
+        completado = 1 if (nuevo_ahorrado + 0.001) >= meta_total else 0
+        
         query = f"""
         UPDATE {self.table} 
-        SET ahorrado_actual = ahorrado_actual + %s,
-            completado = CASE WHEN (ahorrado_actual + %s) >= meta_total THEN 1 ELSE 0 END
+        SET ahorrado_actual = %s,
+            completado = %s
         WHERE id = %s AND usuario_id = %s
         """
-        return self.db.execute_query(query, (monto, monto, ahorro_id, usuario_id))
+        return self.db.execute_query(query, (nuevo_ahorrado, completado, ahorro_id, usuario_id))
 
     def update(self, ahorro_id, usuario_id, concepto, meta_total, fecha_objetivo, descripcion):
         """Actualizar meta de ahorro"""
+        # Primero obtener el estado actual del ahorro
+        current_saving = self.get_by_id(ahorro_id, usuario_id)
+        if not current_saving:
+            raise Exception("Ahorro no encontrado")
+        
+        ahorrado_actual = float(current_saving['ahorrado_actual'])
+        
+        # ✅ CORREGIDO: Usar cálculo preciso para determinar si está completado
+        completado = 1 if (ahorrado_actual + 0.001) >= meta_total else 0
+        
         query = f"""
         UPDATE {self.table} 
         SET concepto = %s, meta_total = %s, fecha_objetivo = %s, descripcion = %s,
-            completado = CASE WHEN ahorrado_actual >= %s THEN 1 ELSE 0 END
+            completado = %s
         WHERE id = %s AND usuario_id = %s
         """
-        return self.db.execute_query(query, (concepto, meta_total, fecha_objetivo, descripcion, meta_total, ahorro_id, usuario_id))
+        return self.db.execute_query(query, (concepto, meta_total, fecha_objetivo, descripcion, completado, ahorro_id, usuario_id))
 
     def delete(self, ahorro_id, usuario_id):
         """Eliminar meta de ahorro"""

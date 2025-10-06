@@ -134,6 +134,46 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    {% block scripts %}{% endblock %}
+    
+    {% block scripts %}
+    <script>
+    // Funciones globales para formateo de números
+
+    // Función para formatear número con separadores de miles
+    function formatearNumero(input) {
+        // Remover todos los caracteres no numéricos excepto punto decimal
+        let valor = input.value.replace(/[^\d.]/g, '');
+        
+        // Separar parte entera y decimal
+        let partes = valor.split('.');
+        let parteEntera = partes[0];
+        let parteDecimal = partes.length > 1 ? '.' + partes[1] : '';
+        
+        // Formatear parte entera con separadores de miles
+        parteEntera = parteEntera.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        
+        // Actualizar el valor del input
+        input.value = parteEntera + parteDecimal;
+    }
+
+    // Función para limpiar el formato antes de enviar el formulario
+    function limpiarFormatoNumero(input) {
+        input.value = input.value.replace(/\./g, '');
+    }
+
+    // Aplicar formato a todos los inputs de monto al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+        // Aplicar a todos los inputs que tengan la clase 'formato-monto'
+        document.querySelectorAll('input.formato-monto').forEach(input => {
+            input.addEventListener('input', function() {
+                formatearNumero(this);
+            });
+            input.addEventListener('blur', function() {
+                limpiarFormatoNumero(this);
+            });
+        });
+    });
+    </script>
+    {% endblock %}
 </body>
 </html>

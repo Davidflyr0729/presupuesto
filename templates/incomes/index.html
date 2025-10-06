@@ -66,7 +66,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form id="addIncomeForm">
+                <form id="addIncomeForm" onsubmit="limpiarFormatosAntesDeEnviar()">
                     <div class="mb-3">
                         <label for="concepto" class="form-label">Concepto *</label>
                         <input type="text" class="form-control" id="concepto" name="concepto" 
@@ -75,8 +75,8 @@
 
                     <div class="mb-3">
                         <label for="monto" class="form-label">Monto *</label>
-                        <input type="number" class="form-control" id="monto" name="monto" 
-                               step="0.01" min="0.01" placeholder="0.00" required>
+                        <input type="text" class="form-control formato-monto" id="monto" name="monto" 
+                               placeholder="0.00" required>
                     </div>
 
                     <div class="mb-3">
@@ -197,7 +197,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="editIncomeForm">
+                <form id="editIncomeForm" onsubmit="limpiarFormatosAntesDeEnviar()">
                     <input type="hidden" id="edit_income_id">
                     <div class="mb-3">
                         <label for="edit_concepto" class="form-label">Concepto *</label>
@@ -205,7 +205,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="edit_monto" class="form-label">Monto *</label>
-                        <input type="number" class="form-control" id="edit_monto" step="0.01" min="0.01" required>
+                        <input type="text" class="form-control formato-monto" id="edit_monto" required>
                     </div>
                     <div class="mb-3">
                         <label for="edit_fecha" class="form-label">Fecha *</label>
@@ -244,6 +244,13 @@ function cambiarMes(mes) {
     if (mes) {
         window.location.href = '/income?mes=' + mes;
     }
+}
+
+// Función para limpiar formatos antes de enviar el formulario
+function limpiarFormatosAntesDeEnviar() {
+    document.querySelectorAll('input.formato-monto').forEach(input => {
+        input.value = input.value.replace(/\./g, '');
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function() {

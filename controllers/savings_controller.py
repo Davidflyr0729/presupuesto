@@ -5,17 +5,17 @@ from datetime import datetime
 
 class SavingsController:
     def __init__(self):
-        self.bp = Blueprint('savings', __name__)
+        self.bp = Blueprint('savings', '__name__', url_prefix='/savings')  # ← CORREGIDO: agregado url_prefix
         self.savings_model = SavingsModel()
         self.register_routes()
 
     def register_routes(self):
-        self.bp.route('/savings')(self.index)
-        self.bp.route('/savings/add', methods=['POST'])(self.add)
-        self.bp.route('/savings/add-money/<int:savings_id>', methods=['POST'])(self.add_money)
-        self.bp.route('/savings/update/<int:savings_id>', methods=['POST'])(self.update)
-        self.bp.route('/savings/delete/<int:savings_id>', methods=['POST'])(self.delete)
-        self.bp.route('/api/savings')(self.api_savings)
+        self.bp.route('/')(self.index)  # ← CORREGIDO: cambiado de '/savings' a '/'
+        self.bp.route('/add', methods=['POST'])(self.add)  # ← CORREGIDO: cambiado de '/savings/add' a '/add'
+        self.bp.route('/add-money/<int:savings_id>', methods=['POST'])(self.add_money)
+        self.bp.route('/update/<int:savings_id>', methods=['POST'])(self.update)
+        self.bp.route('/delete/<int:savings_id>', methods=['POST'])(self.delete)
+        self.bp.route('/api')(self.api_savings)  # ← CORREGIDO: cambiado de '/api/savings' a '/api'
 
     def index(self):
         """Página de listado de ahorros"""
@@ -28,7 +28,8 @@ class SavingsController:
         
         return render_template('savings/index.html',
                              savings=savings,
-                             summary=summary)
+                             summary=summary,
+                             now=datetime.now())  # ← AGREGADO: para usar en el template
 
     def add(self):
         """Agregar nueva meta de ahorro"""
@@ -47,10 +48,21 @@ class SavingsController:
             
             try:
                 user_id = session['user_id']
+                # ✅ VALIDACIÓN: Limpiar formato del monto
+                meta_total_limpio = meta_total.replace('.', '')  # Remover puntos de separadores de miles
+                meta_total_float = float(meta_total_limpio)
+                
+                if meta_total_float <= 0:
+                    flash('La meta total debe ser mayor a 0', 'error')
+                    return redirect(url_for('savings.index'))
+                
                 savings_id = self.savings_model.create(
-                    user_id, concepto, float(meta_total), fecha_objetivo, descripcion
+                    user_id, concepto, meta_total_float, fecha_objetivo, descripcion
                 )
                 flash('¡Meta de ahorro creada exitosamente!', 'success')
+            except ValueError:
+                flash('La meta total ingresada no es válida', 'error')
+                return redirect(url_for('savings.index'))
             except Exception as e:
                 flash('Error al crear la meta de ahorro: ' + str(e), 'error')
         
@@ -64,14 +76,43 @@ class SavingsController:
         if request.method == 'POST':
             monto = request.form.get('monto')
             
-            if not monto or float(monto) <= 0:
-                return jsonify({'success': False, 'error': 'Monto inválido'}), 400
+            if not monto:
+                return jsonify({'success': False, 'error': 'Monto requerido'}), 400
             
             try:
                 user_id = session['user_id']
-                self.savings_model.add_savings(savings_id, user_id, float(monto))
+                
+                # ✅ VALIDACIÓN: Limpiar formato del monto
+                monto_limpio = monto.replace('.', '')  # Remover puntos de separadores de miles
+                monto_float = float(monto_limpio)
+                
+                if monto_float <= 0:
+                    return jsonify({'success': False, 'error': 'El monto debe ser mayor a 0'}), 400
+                
+                # ✅ NUEVA VALIDACIÓN: Verificar que no se supere la meta total
+                # Obtener información de la meta de ahorro
+                saving = self.savings_model.get_by_id(savings_id, user_id)
+                if not saving:
+                    return jsonify({'success': False, 'error': 'Meta de ahorro no encontrada'}), 404
+                
+                meta_total = float(saving['meta_total'])
+                ahorrado_actual = float(saving['ahorrado_actual'])
+                saldo_restante = meta_total - ahorrado_actual
+                
+                # Verificar si el monto a agregar supera la meta
+                if monto_float > saldo_restante:
+                    return jsonify({
+                        'success': False, 
+                        'error': f'No puedes ahorrar más de tu meta. Te faltan ${saldo_restante:,.0f} para completar los ${meta_total:,.0f}'
+                    }), 400
+                
+                # Si pasa la validación, agregar el dinero
+                self.savings_model.add_savings(savings_id, user_id, monto_float)
                 flash('¡Dinero agregado exitosamente!', 'success')
                 return jsonify({'success': True})
+                
+            except ValueError:
+                return jsonify({'success': False, 'error': 'Monto inválido'}), 400
             except Exception as e:
                 return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -91,9 +132,29 @@ class SavingsController:
             
             try:
                 user_id = session['user_id']
-                self.savings_model.update(savings_id, user_id, concepto, float(meta_total), fecha_objetivo, descripcion)
+                # ✅ VALIDACIÓN: Limpiar formato del monto
+                meta_total_limpio = meta_total.replace('.', '')  # Remover puntos de separadores de miles
+                meta_total_float = float(meta_total_limpio)
+                
+                if meta_total_float <= 0:
+                    return jsonify({'success': False, 'error': 'La meta total debe ser mayor a 0'}), 400
+                
+                # ✅ VALIDACIÓN: Verificar que la nueva meta no sea menor que lo ya ahorrado
+                saving = self.savings_model.get_by_id(savings_id, user_id)
+                if saving:
+                    ahorrado_actual = float(saving['ahorrado_actual'])
+                    if meta_total_float < ahorrado_actual:
+                        return jsonify({
+                            'success': False, 
+                            'error': f'La nueva meta no puede ser menor a lo ya ahorrado (${ahorrado_actual:,.0f})'
+                        }), 400
+                
+                self.savings_model.update(savings_id, user_id, concepto, meta_total_float, fecha_objetivo, descripcion)
                 flash('¡Meta de ahorro actualizada exitosamente!', 'success')
                 return jsonify({'success': True})
+                
+            except ValueError:
+                return jsonify({'success': False, 'error': 'Meta total inválida'}), 400
             except Exception as e:
                 return jsonify({'success': False, 'error': str(e)}), 500
 

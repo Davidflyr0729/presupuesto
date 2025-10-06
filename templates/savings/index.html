@@ -57,7 +57,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('savings.add') }}">
+                <form method="POST" action="{{ url_for('savings.add') }}" onsubmit="limpiarFormatosAntesDeEnviar()">
                     <div class="mb-3">
                         <label for="concepto" class="form-label">Concepto *</label>
                         <input type="text" class="form-control" id="concepto" name="concepto" 
@@ -66,8 +66,8 @@
 
                     <div class="mb-3">
                         <label for="meta_total" class="form-label">Meta Total *</label>
-                        <input type="number" class="form-control" id="meta_total" name="meta_total" 
-                               step="0.01" min="0.01" placeholder="0.00" required>
+                        <input type="text" class="form-control formato-monto" id="meta_total" name="meta_total" 
+                               placeholder="0.00" required>
                     </div>
 
                     <div class="mb-3">
@@ -199,9 +199,9 @@
                                 
                                 <div class="mt-3">
                                     {% if not saving.completado %}
-                                    <form class="d-flex mb-2 add-money-form" data-saving-id="{{ saving.id }}">
-                                        <input type="number" class="form-control form-control-sm me-2" 
-                                               step="0.01" min="0.01" placeholder="Monto" required>
+                                    <form class="d-flex mb-2 add-money-form" data-saving-id="{{ saving.id }}" onsubmit="limpiarFormatosAntesDeEnviar()">
+                                        <input type="text" class="form-control form-control-sm me-2 formato-monto" 
+                                               placeholder="Monto" required>
                                         <button type="submit" class="btn btn-success btn-sm">
                                             <i class="fas fa-plus"></i>
                                         </button>
@@ -249,7 +249,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="editSavingForm">
+                <form id="editSavingForm" onsubmit="limpiarFormatosAntesDeEnviar()">
                     <input type="hidden" id="edit_saving_id">
                     <div class="mb-3">
                         <label for="edit_concepto" class="form-label">Concepto *</label>
@@ -257,7 +257,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="edit_meta_total" class="form-label">Meta Total *</label>
-                        <input type="number" class="form-control" id="edit_meta_total" step="0.01" min="0.01" required>
+                        <input type="text" class="form-control formato-monto" id="edit_meta_total" required>
                     </div>
                     <div class="mb-3">
                         <label for="edit_fecha_objetivo" class="form-label">Fecha Objetivo</label>
@@ -280,6 +280,13 @@
 
 {% block scripts %}
 <script>
+// Función para limpiar formatos antes de enviar el formulario
+function limpiarFormatosAntesDeEnviar() {
+    document.querySelectorAll('input.formato-monto').forEach(input => {
+        input.value = input.value.replace(/\./g, '');
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     let currentSavingId = null;
     
@@ -288,8 +295,8 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             const savingId = this.getAttribute('data-saving-id');
-            const montoInput = this.querySelector('input[type="number"]');
-            const monto = parseFloat(montoInput.value);
+            const montoInput = this.querySelector('input[type="text"]');
+            const monto = parseFloat(montoInput.value.replace(/\./g, ''));
             
             if (!monto || monto <= 0) {
                 alert('Por favor ingresa un monto válido');
@@ -359,14 +366,14 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        if (parseFloat(metaTotal) <= 0) {
+        if (parseFloat(metaTotal.replace(/\./g, '')) <= 0) {
             alert('La meta total debe ser mayor a 0');
             return;
         }
         
         const formData = new FormData();
         formData.append('concepto', concepto);
-        formData.append('meta_total', metaTotal);
+        formData.append('meta_total', metaTotal.replace(/\./g, ''));
         formData.append('fecha_objetivo', fechaObjetivo);
         formData.append('descripcion', descripcion);
         

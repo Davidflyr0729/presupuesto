@@ -66,7 +66,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('expenses.add') }}">
+                <form method="POST" action="{{ url_for('expenses.add') }}" onsubmit="limpiarFormatosAntesDeEnviar()">
                     <div class="mb-3">
                         <label for="concepto" class="form-label">Concepto *</label>
                         <input type="text" class="form-control" id="concepto" name="concepto" 
@@ -75,8 +75,8 @@
 
                     <div class="mb-3">
                         <label for="monto" class="form-label">Monto *</label>
-                        <input type="number" class="form-control" id="monto" name="monto" 
-                               step="0.01" min="0.01" placeholder="0.00" required>
+                        <input type="text" class="form-control formato-monto" id="monto" name="monto" 
+                               placeholder="0.00" required>
                     </div>
 
                     <div class="mb-3">
@@ -197,6 +197,13 @@ function cambiarMes(mes) {
     if (mes) {
         window.location.href = '/expenses?mes=' + mes;
     }
+}
+
+// Función para limpiar formatos antes de enviar el formulario
+function limpiarFormatosAntesDeEnviar() {
+    document.querySelectorAll('input.formato-monto').forEach(input => {
+        input.value = input.value.replace(/\./g, '');
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function() {

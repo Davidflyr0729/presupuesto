@@ -64,7 +64,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('budgets.add') }}">
+                <form method="POST" action="{{ url_for('budgets.add') }}" onsubmit="limpiarFormatosAntesDeEnviar()">
                     <div class="mb-3">
                         <label for="categoria_gasto_id" class="form-label">Categoría *</label>
                         <select class="form-select" id="categoria_gasto_id" name="categoria_gasto_id" required>
@@ -84,8 +84,8 @@
 
                     <div class="mb-3">
                         <label for="monto_maximo" class="form-label">Monto Máximo *</label>
-                        <input type="number" class="form-control" id="monto_maximo" name="monto_maximo" 
-                               step="0.01" min="0.01" placeholder="0.00" required>
+                        <input type="text" class="form-control formato-monto" id="monto_maximo" name="monto_maximo" 
+                               placeholder="0.00" required>
                     </div>
 
                     <div class="mb-3">
@@ -224,11 +224,10 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="editBudgetForm">
+                <form id="editBudgetForm" onsubmit="limpiarFormatosAntesDeEnviar()">
                     <div class="mb-3">
                         <label for="edit_monto_maximo" class="form-label">Nuevo Monto Máximo</label>
-                        <input type="number" class="form-control" id="edit_monto_maximo" 
-                               step="0.01" min="0.01" required>
+                        <input type="text" class="form-control formato-monto" id="edit_monto_maximo" required>
                     </div>
                 </form>
             </div>
@@ -243,6 +242,13 @@
 
 {% block scripts %}
 <script>
+// Función para limpiar formatos antes de enviar el formulario
+function limpiarFormatosAntesDeEnviar() {
+    document.querySelectorAll('input.formato-monto').forEach(input => {
+        input.value = input.value.replace(/\./g, '');
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     let currentBudgetId = null;
     

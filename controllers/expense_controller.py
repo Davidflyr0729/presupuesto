@@ -1,12 +1,14 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash, jsonify
 from models.expense import ExpenseModel
+from models.budget import BudgetModel  # ← NUEVO: Importar BudgetModel
 from utils.helpers import decimal_to_float
 from datetime import datetime
 
 class ExpenseController:
     def __init__(self):
-        self.bp = Blueprint('expenses', __name__, url_prefix='/expenses')
+        self.bp = Blueprint('expenses', '__name__', url_prefix='/expenses')
         self.expense_model = ExpenseModel()
+        self.budget_model = BudgetModel()  # ← NUEVO: Instanciar BudgetModel
         self.register_routes()
 
     def register_routes(self):
@@ -100,15 +102,71 @@ class ExpenseController:
             
             try:
                 user_id = session['user_id']
+                
+                # ✅ VALIDACIÓN 1: Limpiar formato y convertir a float
+                monto_limpio = monto.replace('.', '')  # Remover puntos de separadores de miles
+                monto_float = float(monto_limpio)
+                
+                if monto_float <= 0:
+                    flash('El monto debe ser mayor a 0', 'error')
+                    return redirect(url_for('expenses.index'))
+                
+                # ✅ VALIDACIÓN 2: Verificar que el gasto no supere el saldo disponible
+                # Obtener saldo actual (ingresos totales - gastos totales)
+                ingresos_query = "SELECT COALESCE(SUM(monto), 0) as total_ingresos FROM ingresos WHERE usuario_id = %s"
+                ingresos_result = self.expense_model.db.execute_query(ingresos_query, (user_id,), fetch_one=True)
+                total_ingresos = float(ingresos_result['total_ingresos']) if ingresos_result and ingresos_result['total_ingresos'] else 0
+                
+                gastos_query = "SELECT COALESCE(SUM(monto), 0) as total_gastos FROM gastos WHERE usuario_id = %s"
+                gastos_result = self.expense_model.db.execute_query(gastos_query, (user_id,), fetch_one=True)
+                total_gastos = float(gastos_result['total_gastos']) if gastos_result and gastos_result['total_gastos'] else 0
+                
+                saldo_actual = total_ingresos - total_gastos
+                
+                # Verificar si el nuevo gasto supera el saldo disponible
+                if monto_float > saldo_actual:
+                    flash(f'No puedes gastar más de tu saldo disponible. Saldo actual: ${saldo_actual:,.0f}', 'error')
+                    return redirect(url_for('expenses.index'))
+                
+                # ✅ VALIDACIÓN 3: NUEVA - Verificar que el gasto no supere el presupuesto de la categoría
+                # Obtener el presupuesto de la categoría seleccionada
+                budget = self.budget_model.get_budget_by_category(user_id, int(categoria_id))
+                
+                if budget:
+                    presupuesto_maximo = float(budget['monto_maximo'])
+                    gasto_actual = float(budget['gasto_actual'])
+                    saldo_presupuesto = presupuesto_maximo - gasto_actual
+                    
+                    # Verificar si el nuevo gasto supera el presupuesto disponible
+                    if monto_float > saldo_presupuesto:
+                        categoria_nombre = self._get_category_name(int(categoria_id))
+                        flash(f'No puedes gastar más del presupuesto asignado para {categoria_nombre}. '
+                              f'Presupuesto disponible: ${saldo_presupuesto:,.0f}', 'error')
+                        return redirect(url_for('expenses.index'))
+                
+                # Si pasa todas las validaciones, crear el gasto
                 expense_id = self.expense_model.create(
-                    user_id, concepto, float(monto), 
+                    user_id, concepto, monto_float, 
                     int(categoria_id), fecha, esencial, descripcion
                 )
                 flash('¡Gasto agregado exitosamente!', 'success')
+                
+            except ValueError:
+                flash('El monto ingresado no es válido', 'error')
+                return redirect(url_for('expenses.index'))
             except Exception as e:
                 flash('Error al agregar gasto: ' + str(e), 'error')
         
         return redirect(url_for('expenses.index'))
+
+    def _get_category_name(self, categoria_id):
+        """Método auxiliar para obtener el nombre de una categoría"""
+        try:
+            query = "SELECT nombre FROM categorias_gastos WHERE id = %s"
+            result = self.expense_model.db.execute_query(query, (categoria_id,), fetch_one=True)
+            return result['nombre'] if result else 'Categoría'
+        except:
+            return 'Categoría'
 
     def delete(self, expense_id):
         """Eliminar gasto"""
