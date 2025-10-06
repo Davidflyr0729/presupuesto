@@ -29,9 +29,9 @@
     <div class="col-md-4 mb-3">
         <div class="card bg-success text-white">
             <div class="card-body">
-                <h6 class="card-title">Total General</h6>
-                <h3 class="mb-0">${{ "{:,.0f}".format(total_ingresos) if total_ingresos else 0 }}</h3>
-                <small>Acumulado de todos los tiempos</small>
+                <h6 class="card-title">Total Mes</h6>
+                <h3 class="mb-0">${{ "{:,.0f}".format(ingresos_mes) if ingresos_mes else 0 }}</h3>
+                <small>Total de {{ mes_seleccionado[5:7] }}/{{ mes_seleccionado[0:4] }}</small>
             </div>
         </div>
     </div>
