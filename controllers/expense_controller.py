@@ -45,12 +45,39 @@ class ExpenseController:
         total_general = self.expense_model.get_total(user_id)
         total_registros = len(expenses)
         
+        # ✅ CALCULAR SALDO ACTUAL (INGRESOS TOTALES - GASTOS TOTALES) - NUEVO
+        try:
+            # Obtener total de ingresos
+            ingresos_query = "SELECT COALESCE(SUM(monto), 0) as total_ingresos FROM ingresos WHERE usuario_id = %s"
+            ingresos_result = self.expense_model.db.execute_query(ingresos_query, (user_id,), fetch_one=True)
+            total_ingresos = float(ingresos_result['total_ingresos']) if ingresos_result and ingresos_result['total_ingresos'] else 0
+            
+            # Obtener total de gastos (usando el mismo método que en dashboard)
+            gastos_query = "SELECT COALESCE(SUM(monto), 0) as total_gastos FROM gastos WHERE usuario_id = %s"
+            gastos_result = self.expense_model.db.execute_query(gastos_query, (user_id,), fetch_one=True)
+            total_gastos = float(gastos_result['total_gastos']) if gastos_result and gastos_result['total_gastos'] else 0
+            
+            # Calcular saldo actual
+            saldo_actual = total_ingresos - total_gastos
+            
+            # Debug: imprimir valores para verificar
+            print(f"DEBUG - User ID: {user_id}")
+            print(f"DEBUG - Total Ingresos: {total_ingresos}")
+            print(f"DEBUG - Total Gastos: {total_gastos}")
+            print(f"DEBUG - Saldo Actual: {saldo_actual}")
+            print(f"DEBUG - Total General (método anterior): {total_general}")
+            
+        except Exception as e:
+            print(f"Error calculando saldo actual: {e}")
+            saldo_actual = 0
+    
         return render_template('transactions/expenses.html',
                              expenses=expenses,
                              categories=categories,
                              total_mes=total_mes,
                              total_general=total_general,
                              total_registros=total_registros,
+                             saldo_actual=saldo_actual,  # ← NUEVO
                              mes_seleccionado=mes_seleccionado,
                              now=datetime.now())
 

@@ -29,18 +29,18 @@
     <div class="col-md-4 mb-3">
         <div class="card bg-success text-white">
             <div class="card-body">
-                <h6 class="card-title">Total Mes</h6>
+                <h6 class="card-title">Ingresos del Mes</h6>
                 <h3 class="mb-0">${{ "{:,.0f}".format(ingresos_mes) if ingresos_mes else 0 }}</h3>
-                <small>Total de {{ mes_seleccionado[5:7] }}/{{ mes_seleccionado[0:4] }}</small>
+                <small>{{ mes_seleccionado[5:7] }}/{{ mes_seleccionado[0:4] }}</small>
             </div>
         </div>
     </div>
     <div class="col-md-4 mb-3">
         <div class="card bg-primary text-white">
             <div class="card-body">
-                <h6 class="card-title">Ingresos de {{ mes_seleccionado[5:7] }}/{{ mes_seleccionado[0:4] }}</h6>
-                <h3 class="mb-0">${{ "{:,.0f}".format(ingresos_mes) if ingresos_mes else 0 }}</h3>
-                <small>Total del mes seleccionado</small>
+                <h6 class="card-title">Saldo Actual</h6>
+                <h3 class="mb-0">${{ "{:,.0f}".format(saldo_actual) if saldo_actual else 0 }}</h3>
+                <small>Saldo total actual</small>
             </div>
         </div>
     </div>
@@ -49,7 +49,7 @@
             <div class="card-body">
                 <h6 class="card-title">Registros</h6>
                 <h3 class="mb-0">{{ total_registros if total_registros else 0 }}</h3>
-                <small>En {{ mes_seleccionado[5:7] }}/{{ mes_seleccionado[0:4] }}</small>
+                <small>{{ mes_seleccionado[5:7] }}/{{ mes_seleccionado[0:4] }}</small>
             </div>
         </div>
     </div>

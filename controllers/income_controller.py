@@ -45,6 +45,7 @@ class IncomeController:
                                      total_ingresos=0,
                                      ingresos_mes=0,
                                      total_registros=0,
+                                     saldo_actual=0,  # ← NUEVO
                                      active_page='income',
                                      mes_actual=datetime.now().strftime('%Y-%m'),
                                      mes_seleccionado=datetime.now().strftime('%Y-%m'))
@@ -85,6 +86,17 @@ class IncomeController:
             total_general_result = cursor.fetchone()
             total_ingresos_general = float(total_general_result['total_general']) if total_general_result else 0
             
+            # ✅ CALCULAR SALDO ACTUAL (INGRESOS TOTALES - GASTOS TOTALES) - NUEVO
+            cursor.execute("""
+                SELECT COALESCE(SUM(monto), 0) as total_gastos 
+                FROM gastos 
+                WHERE usuario_id = %s
+            """, (user_id,))
+            total_gastos_result = cursor.fetchone()
+            total_gastos = float(total_gastos_result['total_gastos']) if total_gastos_result else 0
+            
+            saldo_actual = total_ingresos_general - total_gastos
+            
             cursor.close()
             conn.close()
             
@@ -95,6 +107,7 @@ class IncomeController:
                                  total_ingresos=total_ingresos_general,  # Total general
                                  ingresos_mes=total_ingresos_mes,        # Total del mes seleccionado
                                  total_registros=total_registros,        # Registros del mes seleccionado
+                                 saldo_actual=saldo_actual,              # ← NUEVO: Saldo actual
                                  active_page='income',
                                  mes_actual=datetime.now().strftime('%Y-%m'),
                                  mes_seleccionado=mes_seleccionado)
@@ -108,6 +121,7 @@ class IncomeController:
                                  total_ingresos=0,
                                  ingresos_mes=0,
                                  total_registros=0,
+                                 saldo_actual=0,  # ← NUEVO
                                  active_page='income',
                                  mes_actual=datetime.now().strftime('%Y-%m'),
                                  mes_seleccionado=datetime.now().strftime('%Y-%m'))
