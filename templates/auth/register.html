@@ -3,25 +3,25 @@
 {% block title %}Registro - Presupuesto Personal{% endblock %}
 
 {% block auth_content %}
-<div class="container">
-    <div class="row justify-content-center min-vh-100 align-items-center">
-        <div class="col-md-6 col-lg-5">
-            <div class="card shadow-lg">
-                <div class="card-body p-5">
-                    <!-- Logo -->
+<div class="container-fluid">
+    <div class="row justify-content-center align-items-center min-vh-100 py-4">
+        <div class="col-11 col-sm-8 col-md-6 col-lg-5 col-xl-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <!-- Logo más grande -->
                     <div class="text-center mb-4">
-                        <i class="fas fa-wallet fa-3x text-primary mb-3"></i>
-                        <h2 class="card-title">Crear Cuenta</h2>
-                        <p class="text-muted">Regístrate para comenzar</p>
+                        <i class="fas fa-wallet fa-3x text-primary mb-2"></i>
+                        <h4 class="card-title fw-bold mb-1">Crear Cuenta</h4>
+                        <p class="text-muted">Completa tus datos para registrarte</p>
                     </div>
 
-                    <!-- Register Form -->
+                    <!-- Register Form más grande -->
                     <form method="POST" action="{{ url_for('auth.register') }}">
                         <div class="mb-3">
-                            <label for="nombre" class="form-label">Nombre Completo</label>
+                            <label for="nombre" class="form-label fw-semibold">Nombre Completo</label>
                             <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="fas fa-user"></i>
+                                <span class="input-group-text bg-light">
+                                    <i class="fas fa-user text-muted"></i>
                                 </span>
                                 <input type="text" class="form-control" id="nombre" name="nombre" 
                                        placeholder="Tu nombre completo" required>
@@ -29,10 +29,10 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
+                            <label for="email" class="form-label fw-semibold">Email</label>
                             <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="fas fa-envelope"></i>
+                                <span class="input-group-text bg-light">
+                                    <i class="fas fa-envelope text-muted"></i>
                                 </span>
                                 <input type="email" class="form-control" id="email" name="email" 
                                        placeholder="tu@email.com" required>
@@ -40,22 +40,22 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="password" class="form-label">Contraseña</label>
+                            <label for="password" class="form-label fw-semibold">Contraseña</label>
                             <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="fas fa-lock"></i>
+                                <span class="input-group-text bg-light">
+                                    <i class="fas fa-lock text-muted"></i>
                                 </span>
                                 <input type="password" class="form-control" id="password" name="password" 
                                        placeholder="Mínimo 6 caracteres" minlength="6" required>
                             </div>
-                            <div class="form-text">La contraseña debe tener al menos 6 caracteres.</div>
+                            <div class="form-text">Mínimo 6 caracteres</div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="confirm_password" class="form-label">Confirmar Contraseña</label>
+                        <div class="mb-4">
+                            <label for="confirm_password" class="form-label fw-semibold">Confirmar Contraseña</label>
                             <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="fas fa-lock"></i>
+                                <span class="input-group-text bg-light">
+                                    <i class="fas fa-lock text-muted"></i>
                                 </span>
                                 <input type="password" class="form-control" id="confirm_password" 
                                        name="confirm_password" placeholder="Repite tu contraseña" required>
@@ -63,18 +63,18 @@
                         </div>
 
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fas fa-user-plus me-2"></i>
+                            <button type="submit" class="btn btn-primary py-2 fw-semibold">
+                                <i class="fas fa-user-plus me-1"></i>
                                 Crear Cuenta
                             </button>
                         </div>
                     </form>
 
-                    <div class="text-center mt-4">
+                    <div class="text-center mt-3">
                         <p class="mb-0">
                             ¿Ya tienes cuenta? 
-                            <a href="{{ url_for('auth.login') }}" class="text-decoration-none">
-                                Inicia sesión aquí
+                            <a href="{{ url_for('auth.login') }}" class="text-decoration-none fw-semibold">
+                                Inicia sesión
                             </a>
                         </p>
                     </div>
@@ -83,4 +83,37 @@
         </div>
     </div>
 </div>
+
+<style>
+.min-vh-100 {
+    min-height: 100vh !important;
+}
+
+.card {
+    border-radius: 12px;
+}
+
+/* Mejorar responsividad para móviles muy pequeños */
+@media (max-width: 576px) {
+    .container-fluid {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    
+    .col-11 {
+        margin: 0 5px;
+    }
+    
+    .card-body {
+        padding: 1.5rem !important;
+    }
+}
+
+/* Asegurar que no haya scroll en pantallas normales */
+@media (min-height: 600px) {
+    .min-vh-100 {
+        min-height: 100vh;
+    }
+}
+</style>
 {% endblock %}

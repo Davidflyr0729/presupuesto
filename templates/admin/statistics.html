@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block title %}Estadísticas del Sistema - Administración{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-chart-bar me-2"></i>
+        Estadísticas del Sistema
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('admin.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i>
+            Volver al Panel
+        </a>
+    </div>
+</div>
+
+<!-- Resumen General -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-tachometer-alt me-2"></i>
+                    Resumen General del Sistema
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Total Usuarios -->
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="text-center p-3 border rounded">
+                            <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                            <h4 class="mb-1">{{ total_usuarios }}</h4>
+                            <small class="text-muted">Usuarios Totales</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Usuarios Activos -->
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="text-center p-3 border rounded">
+                            <i class="fas fa-user-check fa-2x text-success mb-2"></i>
+                            <h4 class="mb-1">{{ usuarios_activos }}</h4>
+                            <small class="text-muted">Usuarios Activos</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Balance Total -->
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="text-center p-3 border rounded">
+                            <i class="fas fa-balance-scale fa-2x {% if balance_total >= 0 %}text-success{% else %}text-danger{% endif %} mb-2"></i>
+                            <h4 class="mb-1">${{ "{:,.0f}".format(balance_total) }}</h4>
+                            <small class="text-muted">Balance Total</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Promedio por Usuario -->
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="text-center p-3 border rounded">
+                            <i class="fas fa-chart-line fa-2x text-info mb-2"></i>
+                            <h4 class="mb-1">${{ "{:,.0f}".format(promedio_ingresos - promedio_gastos) }}</h4>
+                            <small class="text-muted">Promedio por Usuario</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas Financieras -->
+<div class="row mb-4">
+    <!-- Ingresos -->
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-money-bill-wave me-2"></i>
+                    Ingresos Totales
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <h2 class="text-primary">${{ "{:,.0f}".format(ingresos_totales) }}</h2>
+                    <p class="text-muted">Acumulado histórico</p>
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h5 class="text-success">${{ "{:,.0f}".format(ingresos_ultimo_mes) }}</h5>
+                            <small class="text-muted">Último Mes</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h5 class="{% if variacion_ingresos >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ variacion_ingresos }}%
+                        </h5>
+                        <small class="text-muted">Variación</small>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-calculator me-1"></i>
+                        Promedio por usuario: ${{ "{:,.0f}".format(promedio_ingresos) }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Gastos -->
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-shopping-cart me-2"></i>
+                    Gastos Totales
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <h2 class="text-danger">${{ "{:,.0f}".format(gastos_totales) }}</h2>
+                    <p class="text-muted">Acumulado histórico</p>
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h5 class="text-danger">${{ "{:,.0f}".format(gastos_ultimo_mes) }}</h5>
+                            <small class="text-muted">Último Mes</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h5 class="{% if variacion_gastos >= 0 %}text-danger{% else %}text-success{% endif %}">
+                            {{ variacion_gastos }}%
+                        </h5>
+                        <small class="text-muted">Variación</small>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-calculator me-1"></i>
+                        Promedio por usuario: ${{ "{:,.0f}".format(promedio_gastos) }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Categorías -->
+<div class="row mb-4">
+    <!-- Top Categorías Ingresos -->
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list-alt me-2 text-success"></i>
+                    Top Categorías - Ingresos
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if top_categorias_ingresos %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Categoría</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-end">Transacciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for categoria in top_categorias_ingresos %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-success me-2">{{ loop.index }}</span>
+                                    {{ categoria.nombre }}
+                                </td>
+                                <td class="text-end text-success">
+                                    <strong>${{ "{:,.0f}".format(categoria.total) }}</strong>
+                                </td>
+                                <td class="text-end text-muted">
+                                    {{ categoria.cantidad }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-chart-pie fa-2x mb-2"></i>
+                    <p>No hay datos de categorías de ingresos</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Categorías Gastos -->
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list-alt me-2 text-danger"></i>
+                    Top Categorías - Gastos
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if top_categorias_gastos %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Categoría</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-end">Transacciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for categoria in top_categorias_gastos %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-danger me-2">{{ loop.index }}</span>
+                                    {{ categoria.nombre }}
+                                </td>
+                                <td class="text-end text-danger">
+                                    <strong>${{ "{:,.0f}".format(categoria.total) }}</strong>
+                                </td>
+                                <td class="text-end text-muted">
+                                    {{ categoria.cantidad }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-chart-pie fa-2x mb-2"></i>
+                    <p>No hay datos de categorías de gastos</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Métricas Adicionales -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Métricas del Sistema
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="p-3 border rounded bg-light">
+                            <i class="fas fa-percentage fa-2x text-info mb-2"></i>
+                            <h5>{{ "%.1f"|format((usuarios_activos / total_usuarios * 100) if total_usuarios > 0 else 0) }}%</h5>
+                            <small class="text-muted">Tasa de Actividad</small>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="p-3 border rounded bg-light">
+                            <i class="fas fa-exchange-alt fa-2x text-warning mb-2"></i>
+                            <h5>{{ "{:,.0f}".format((ingresos_ultimo_mes + gastos_ultimo_mes) / 30) }}</h5>
+                            <small class="text-muted">Promedio Diario</small>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="p-3 border rounded bg-light">
+                            <i class="fas fa-piggy-bank fa-2x text-success mb-2"></i>
+                            <h5>${{ "{:,.0f}".format(ingresos_ultimo_mes - gastos_ultimo_mes) }}</h5>
+                            <small class="text-muted">Ahorro del Mes</small>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="p-3 border rounded bg-light">
+                            <i class="fas fa-chart-pie fa-2x text-primary mb-2"></i>
+                            <h5>{{ "{:,.0f}".format((gastos_ultimo_mes / ingresos_ultimo_mes * 100) if ingresos_ultimo_mes > 0 else 0) }}%</h5>
+                            <small class="text-muted">Ratio Gastos/Ingresos</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Información del Sistema -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Información del Sistema
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-database me-2"></i>
+                    <strong>Datos en tiempo real:</strong> Las estadísticas se actualizan automáticamente con la información más reciente del sistema.
+                    Última actualización: {{ now.strftime('%d/%m/%Y %H:%M') }}
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Períodos de análisis:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-calendar me-2 text-primary"></i> Histórico: Desde el inicio del sistema</li>
+                            <li><i class="fas fa-calendar me-2 text-success"></i> Último mes: Últimos 30 días</li>
+                            <li><i class="fas fa-calendar me-2 text-warning"></i> Variación: Comparación mes actual vs anterior</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Definiciones:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-user me-2 text-info"></i> <strong>Usuario Activo:</strong> Realizó movimientos en los últimos 30 días</li>
+                            <li><i class="fas fa-chart-line me-2 text-success"></i> <strong>Variación Positiva:</strong> Crecimiento vs período anterior</li>
+                            <li><i class="fas fa-balance-scale me-2 text-primary"></i> <strong>Balance:</strong> Ingresos totales - Gastos totales</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

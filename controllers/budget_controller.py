@@ -6,14 +6,14 @@ from datetime import datetime
 
 class BudgetController:
     def __init__(self):
-        self.bp = Blueprint('budgets', __name__, url_prefix='/budgets')  # ← CORREGIDO: agregado url_prefix
+        self.bp = Blueprint('budgets', __name__, url_prefix='/budgets')
         self.budget_model = BudgetModel()
         self.expense_model = ExpenseModel()
         self.register_routes()
 
     def register_routes(self):
-        self.bp.route('/')(self.index)  # ← CORREGIDO: cambiado de '/budgets' a '/'
-        self.bp.route('/add', methods=['POST'])(self.add)  # ← CORREGIDO: cambiado de '/budgets/add' a '/add'
+        self.bp.route('/')(self.index)
+        self.bp.route('/add', methods=['POST'])(self.add)
         self.bp.route('/update/<int:budget_id>', methods=['POST'])(self.update)
         self.bp.route('/delete/<int:budget_id>', methods=['POST'])(self.delete)
         self.bp.route('/api')(self.api_budgets)
@@ -29,20 +29,25 @@ class BudgetController:
         year = request.args.get('year', datetime.now().year, type=int)
         
         budgets = self.budget_model.get_by_user(user_id, month, year)
-        categories = self.budget_model.get_categories_without_budget(user_id, month, year)
-        expense_categories = self.expense_model.get_categories()
+        
+        # CORREGIDO: Obtener TODAS las categorías de gastos y filtrar manualmente
+        all_categories = self.expense_model.get_categories()
+        
+        # Filtrar categorías que no tienen presupuesto
+        budgeted_category_ids = [budget['categoria_gasto_id'] for budget in budgets]
+        categories_without_budget = [cat for cat in all_categories if cat['id'] not in budgeted_category_ids]
         
         # Obtener el resumen general
         summary = self.budget_model.get_budget_summary(user_id, month, year)
         
         return render_template('budgets/index.html',
                              budgets=budgets,
-                             categories=categories,
-                             expense_categories=expense_categories,
+                             categories=categories_without_budget,  # Solo categorías sin presupuesto
+                             expense_categories=all_categories,     # Todas las categorías
                              summary=summary,
                              current_month=month,
                              current_year=year,
-                             now=datetime.now())  # ← AGREGADO: para usar en el template
+                             now=datetime.now())
 
     def add(self):
         """Agregar nuevo presupuesto"""
@@ -149,5 +154,5 @@ class BudgetController:
         
         return jsonify(progress_data)
 
-# ESTA LÍNEA ES CRÍTICA - CREA LA INSTANCIA QUE APP.PY NECESITA
+# Crear instancia del controlador
 budget_controller = BudgetController()
