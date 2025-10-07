@@ -17,7 +17,7 @@ class ExpenseModel:
         )
 
     def get_by_user(self, usuario_id, month=None, year=None):
-        """Obtener gastos del usuario"""
+        """Obtener gastos del usuario - ORDENADO POR FECHA DESCENDENTE (más reciente primero)"""
         query = f"""
         SELECT g.*, cg.nombre as categoria_nombre, cg.color, cg.icono
         FROM {self.table} g 
@@ -30,7 +30,8 @@ class ExpenseModel:
             query += " AND MONTH(g.fecha) = %s AND YEAR(g.fecha) = %s"
             params.extend([month, year])
 
-        query += " ORDER BY g.fecha DESC"
+        # ORDENAR POR FECHA DESCENDENTE Y ID DESCENDENTE (para consistencia)
+        query += " ORDER BY g.fecha DESC, g.id DESC"
         return self.db.execute_query(query, tuple(params), fetch=True)
 
     def get_total(self, usuario_id, month=None, year=None):

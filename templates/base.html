@@ -45,6 +45,10 @@
             background: linear-gradient(135deg, #f59e0b, #d97706);
             color: white;
         }
+        .admin-card {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -59,6 +63,11 @@
                             <i class="fas fa-wallet me-2"></i>
                             Mi Presupuesto
                         </h4>
+                        {% if session.user_role == 1 %}
+                        <span class="badge bg-warning mt-1">
+                            <i class="fas fa-crown me-1"></i>Administrador
+                        </span>
+                        {% endif %}
                     </div>
                     
                     <ul class="nav flex-column">
@@ -93,12 +102,33 @@
                                 Ahorros
                             </a>
                         </li>
+                        
+                        <!-- SOLO PARA ADMINISTRADORES -->
+                        {% if session.user_role == 1 %}
+                        <li class="nav-item mt-3">
+                            <hr class="text-white">
+                            <small class="text-white-50 px-3">ADMINISTRACIÓN</small>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'admin.index' %}active{% endif %}" 
+                               href="{{ url_for('admin.index') }}">
+                                <i class="fas fa-cog me-2"></i>
+                                Panel de Admin
+                            </a>
+                        </li>
+                        {% endif %}
+                        <!-- FIN SECCIÓN ADMIN -->
                     </ul>
 
                     <div class="mt-4 p-3">
                         <div class="text-white">
                             <small>Bienvenido,</small>
                             <h6>{{ session.user_name }}</h6>
+                            {% if session.user_role == 1 %}
+                            <small class="text-warning">
+                                <i class="fas fa-shield-alt me-1"></i>Cuenta Admin
+                            </small>
+                            {% endif %}
                         </div>
                         <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm w-100 mt-2">
                             <i class="fas fa-sign-out-alt me-1"></i>
@@ -134,6 +164,135 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Script para control de sesión entre pestañas -->
+    <script>
+    // Sistema avanzado para control de sesión entre pestañas
+    function initializeSessionControl() {
+        const SESSION_KEY = 'presupuesto_session_timestamp';
+        const MAX_SESSION_AGE = 5 * 60 * 1000; // 5 minutos en milisegundos
+        
+        // Función para verificar y actualizar la sesión
+        function checkSession() {
+            const now = Date.now();
+            const lastActivity = localStorage.getItem(SESSION_KEY);
+            
+            if (!lastActivity) {
+                // No hay sesión activa, redirigir al login
+                window.location.href = "{{ url_for('auth.logout') }}";
+                return false;
+            }
+            
+            const sessionAge = now - parseInt(lastActivity);
+            
+            if (sessionAge > MAX_SESSION_AGE) {
+                // Sesión expirada, redirigir al login
+                localStorage.removeItem(SESSION_KEY);
+                alert('Tu sesión ha expirado. Serás redirigido al login.');
+                window.location.href = "{{ url_for('auth.logout') }}";
+                return false;
+            }
+            
+            // Actualizar timestamp de actividad
+            localStorage.setItem(SESSION_KEY, now.toString());
+            return true;
+        }
+        
+        // Control de inactividad
+        let inactivityTimer;
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(function() {
+                if (checkSession()) {
+                    // Si la sesión sigue activa pero hay inactividad, forzar logout
+                    localStorage.removeItem(SESSION_KEY);
+                    alert('Tu sesión ha expirado por inactividad. Serás redirigido al login.');
+                    window.location.href = "{{ url_for('auth.logout') }}";
+                }
+            }, MAX_SESSION_AGE);
+        }
+        
+        // Inicializar sesión si es la primera pestaña
+        if (!localStorage.getItem(SESSION_KEY)) {
+            localStorage.setItem(SESSION_KEY, Date.now().toString());
+        }
+        
+        // Verificar sesión inmediatamente
+        if (!checkSession()) {
+            return;
+        }
+        
+        // Configurar eventos para detectar actividad
+        const activityEvents = [
+            'mousemove', 'keypress', 'click', 'scroll', 
+            'mousedown', 'touchstart'
+        ];
+        
+        activityEvents.forEach(function(event) {
+            document.addEventListener(event, function() {
+                if (checkSession()) {
+                    resetInactivityTimer();
+                }
+            });
+        });
+        
+        // Iniciar timer de inactividad
+        resetInactivityTimer();
+        
+        // Verificar sesión periódicamente (cada 30 segundos)
+        setInterval(checkSession, 30000);
+        
+        // Limpiar al cerrar la pestaña (pero mantener para otras pestañas)
+        window.addEventListener('beforeunload', function() {
+            // No limpiamos localStorage aquí para permitir múltiples pestañas
+            // durante el tiempo de sesión activa
+        });
+    }
+
+    // Solo inicializar si el usuario está logueado
+    {% if session.user_id %}
+    // Esperar a que la página cargue completamente
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeSessionControl();
+    });
+    {% else %}
+    // Si no está logueado, limpiar cualquier sesión residual
+    localStorage.removeItem('presupuesto_session_timestamp');
+    {% endif %}
+    </script>
+    
+    <!-- Script para redirección automática en pestañas nuevas -->
+    <script>
+    // Este script se ejecuta en TODAS las páginas, incluso login
+    document.addEventListener('DOMContentLoaded', function() {
+        const SESSION_KEY = 'presupuesto_session_timestamp';
+        const sessionActive = localStorage.getItem(SESSION_KEY);
+        const now = Date.now();
+        const MAX_SESSION_AGE = 5 * 60 * 1000; // 5 minutos
+        
+        // Si estamos en una página de auth (login/register) y hay sesión activa
+        const isAuthPage = window.location.pathname.includes('/login') || 
+                          window.location.pathname.includes('/register');
+        
+        if (isAuthPage && sessionActive) {
+            const sessionAge = now - parseInt(sessionActive);
+            if (sessionAge <= MAX_SESSION_AGE) {
+                // Hay una sesión activa válida, redirigir al dashboard
+                window.location.href = "{{ url_for('dashboard.index') }}";
+            } else {
+                // Sesión expirada, limpiar
+                localStorage.removeItem(SESSION_KEY);
+            }
+        }
+        
+        // Si estamos en una página protegida y NO hay sesión activa
+        const isProtectedPage = !isAuthPage && {% if session.user_id %}true{% else %}false{% endif %};
+        if (isProtectedPage && !sessionActive) {
+            // Redirigir al login
+            window.location.href = "{{ url_for('auth.login') }}";
+        }
+    });
+    </script>
     
     {% block scripts %}
     <script>

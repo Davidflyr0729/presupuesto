@@ -280,6 +280,78 @@
 
 {% block scripts %}
 <script>
+// Función para mostrar alerta bonita
+function mostrarAlerta(mensaje, tipo = 'danger') {
+    // Crear elemento de alerta
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${tipo} alert-dismissible fade show`;
+    alertDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+    
+    // Icono según el tipo de alerta
+    let icono = 'exclamation-circle';
+    if (tipo === 'success') icono = 'check-circle';
+    if (tipo === 'warning') icono = 'exclamation-triangle';
+    
+    alertDiv.innerHTML = `
+        <i class="fas fa-${icono} me-2"></i>
+        ${mensaje}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Agregar al body
+    document.body.appendChild(alertDiv);
+    
+    // Auto-eliminar después de 5 segundos
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+// Función para mejorar mensajes de error del servidor
+function mejorarMensajeError(error) {
+    if (!error) return 'Error desconocido';
+    
+    // Si el error contiene información sobre superar la meta
+    if (error.includes('No puedes ahorrar más de tu meta') || 
+        error.includes('supera la meta') ||
+        error.includes('más de tu meta') ||
+        error.includes('supere la meta') ||
+        error.includes('completar los')) {
+        return 'No puedes ingresar más dinero del necesario para completar tu meta. Revisa el monto que intentas agregar.';
+    }
+    
+    // Si el error contiene información sobre saldo
+    if (error.includes('saldo') || error.includes('disponible')) {
+        return 'No tienes suficiente saldo disponible para realizar esta operación.';
+    }
+    
+    // Si el error contiene información sobre presupuesto
+    if (error.includes('presupuesto')) {
+        return 'Has superado el presupuesto asignado para esta categoría.';
+    }
+    
+    // Si el error contiene información sobre monto menor
+    if (error.includes('menor') || error.includes('ahorrado actual')) {
+        return 'No puedes establecer una meta menor a lo que ya has ahorrado.';
+    }
+    
+    const mensajesMejorados = {
+        'No puedes ahorrar más de tu meta': 'No puedes ingresar más dinero del necesario para completar tu meta actual.',
+        'No puedes gastar más de tu saldo disponible': 'No tienes suficiente saldo disponible para esta operación',
+        'No puedes gastar más del presupuesto asignado': 'Has superado el presupuesto asignado para esta categoría',
+        'La nueva meta no puede ser menor a lo ya ahorrado': 'No puedes reducir la meta por debajo de lo que ya has ahorrado',
+        'Monto inválido': 'Por favor ingresa un monto válido',
+        'Meta total inválida': 'Por favor ingresa una meta total válida',
+        'Campos obligatorios faltantes': 'Por favor completa todos los campos obligatorios',
+        'El monto debe ser mayor a 0': 'El monto debe ser mayor a cero',
+        'La meta total debe ser mayor a 0': 'La meta total debe ser mayor a cero'
+    };
+    
+    return mensajesMejorados[error] || error;
+}
+
 // Función para limpiar formatos antes de enviar el formulario
 function limpiarFormatosAntesDeEnviar() {
     document.querySelectorAll('input.formato-monto').forEach(input => {
@@ -299,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const monto = parseFloat(montoInput.value.replace(/\./g, ''));
             
             if (!monto || monto <= 0) {
-                alert('Por favor ingresa un monto válido');
+                mostrarAlerta('Por favor ingresa un monto válido', 'warning');
                 return;
             }
             
@@ -315,20 +387,25 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Error en la respuesta del servidor');
+                    return response.json().then(errorData => {
+                        throw new Error(errorData.error || 'Error en el servidor');
+                    });
                 }
                 return response.json();
             })
             .then(data => {
                 if (data.success) {
-                    location.reload();
+                    mostrarAlerta('¡Dinero agregado exitosamente!', 'success');
+                    setTimeout(() => location.reload(), 1000);
                 } else {
-                    alert('Error al agregar dinero: ' + (data.error || 'Error desconocido'));
+                    const mensajeMejorado = mejorarMensajeError(data.error);
+                    mostrarAlerta(mensajeMejorado, 'danger');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error al agregar dinero: ' + error.message);
+                const mensajeMejorado = mejorarMensajeError(error.message);
+                mostrarAlerta(mensajeMejorado, 'danger');
             });
         });
     });
@@ -362,12 +439,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const descripcion = document.getElementById('edit_descripcion').value.trim();
         
         if (!concepto || !metaTotal) {
-            alert('Por favor completa los campos obligatorios');
+            mostrarAlerta('Por favor completa los campos obligatorios', 'warning');
             return;
         }
         
         if (parseFloat(metaTotal.replace(/\./g, '')) <= 0) {
-            alert('La meta total debe ser mayor a 0');
+            mostrarAlerta('La meta total debe ser mayor a 0', 'warning');
             return;
         }
         
@@ -386,20 +463,25 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Error en la respuesta del servidor');
+                return response.json().then(errorData => {
+                    throw new Error(errorData.error || 'Error en el servidor');
+                });
             }
             return response.json();
         })
         .then(data => {
             if (data.success) {
-                location.reload();
+                mostrarAlerta('¡Meta actualizada exitosamente!', 'success');
+                setTimeout(() => location.reload(), 1000);
             } else {
-                alert('Error al actualizar la meta: ' + (data.error || 'Error desconocido'));
+                const mensajeMejorado = mejorarMensajeError(data.error);
+                mostrarAlerta(mensajeMejorado, 'danger');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error al actualizar la meta: ' + error.message);
+            const mensajeMejorado = mejorarMensajeError(error.message);
+            mostrarAlerta(mensajeMejorado, 'danger');
         });
     });
     
@@ -418,20 +500,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('Error en la respuesta del servidor');
+                        return response.json().then(errorData => {
+                            throw new Error(errorData.error || 'Error en el servidor');
+                        });
                     }
                     return response.json();
                 })
                 .then(data => {
                     if (data.success) {
-                        location.reload();
+                        mostrarAlerta('¡Meta eliminada exitosamente!', 'success');
+                        setTimeout(() => location.reload(), 1000);
                     } else {
-                        alert('Error al eliminar la meta: ' + (data.error || 'Error desconocido'));
+                        const mensajeMejorado = mejorarMensajeError(data.error);
+                        mostrarAlerta(mensajeMejorado, 'danger');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Error al eliminar la meta: ' + error.message);
+                    const mensajeMejorado = mejorarMensajeError(error.message);
+                    mostrarAlerta(mensajeMejorado, 'danger');
                 });
             }
         });

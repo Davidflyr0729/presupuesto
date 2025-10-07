@@ -25,6 +25,8 @@ class AuthController:
             user = self.user_model.login(email, password)
             
             if user:
+                # Configurar sesión NO permanente (se cierra al cerrar navegador)
+                session.permanent = False
                 session['user_id'] = user['id']
                 session['user_name'] = user['nombre']
                 session['user_email'] = user['email']

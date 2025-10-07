@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Administración - Presupuesto Personal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-cog me-2"></i>
+        Panel de Administración
+    </h1>
+</div>
+
+<!-- Tarjetas de resumen -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card admin-card">
+            <div class="card-body">
+                <h6 class="card-title">Total Usuarios</h6>
+                <h3 class="mb-0">{{ total_usuarios }}</h3>
+                <small>Usuarios registrados</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h6 class="card-title">Ingresos Totales</h6>
+                <h3 class="mb-0">$0</h3>
+                <small>En el sistema</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h6 class="card-title">Gastos Totales</h6>
+                <h3 class="mb-0">$0</h3>
+                <small>En el sistema</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h6 class="card-title">Metas Activas</h6>
+                <h3 class="mb-0">0</h3>
+                <small>Total de ahorros</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Usuarios -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-users me-2"></i>
+                    Gestión de Usuarios
+                </h5>
+                <span class="badge bg-primary">
+                    {{ usuarios|length }} usuario{% if usuarios|length != 1 %}s{% endif %}
+                </span>
+            </div>
+            <div class="card-body p-0">
+                {% if usuarios %}
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-hover mb-0">
+                        <thead class="sticky-top" style="background-color: #f8f9fa;">
+                            <tr>
+                                <th style="position: sticky; top: 0; background-color: #f8f9fa;">ID</th>
+                                <th style="position: sticky; top: 0; background-color: #f8f9fa;">Nombre</th>
+                                <th style="position: sticky; top: 0; background-color: #f8f9fa;">Email</th>
+                                <th style="position: sticky; top: 0; background-color: #f8f9fa;">Rol</th>
+                                <th style="position: sticky; top: 0; background-color: #f8f9fa;">Estado</th>
+                                <th style="position: sticky; top: 0; background-color: #f8f9fa;">Fecha Registro</th>
+                                <th style="position: sticky; top: 0; background-color: #f8f9fa;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for usuario in usuarios %}
+                            <tr>
+                                <td><strong>#{{ usuario.id }}</strong></td>
+                                <td>
+                                    <strong>{{ usuario.nombre }}</strong>
+                                    {% if usuario.id == session.user_id %}
+                                    <span class="badge bg-info ms-1">Tú</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ usuario.email }}</td>
+                                <td>
+                                    {% if usuario.rol_id == 1 %}
+                                    <span class="badge bg-warning">Administrador</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Usuario</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if usuario.activo == 1 %}
+                                    <span class="badge bg-success">Activo</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Inactivo</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ usuario.fecha_creacion }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        {% if usuario.id != session.user_id %}
+                                        <button class="btn btn-outline-danger" title="Eliminar">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% else %}
+                                        <button class="btn btn-outline-secondary" disabled title="No puedes eliminarte a ti mismo">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-users fa-3x mb-3"></i>
+                    <p>No hay usuarios registrados en el sistema</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contenido principal -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-tachometer-alt me-2"></i>
+                    Resumen del Sistema
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Panel de Administración</strong> - Aquí podrás gestionar usuarios, ver estadísticas del sistema y configurar opciones avanzadas.
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 border rounded">
+                            <i class="fas fa-user-plus fa-2x text-primary mb-2"></i>
+                            <h5>Crear Usuario</h5>
+                            <p class="text-muted">Agregar nuevos usuarios al sistema</p>
+                            <button class="btn btn-outline-primary btn-sm" disabled>
+                                Próximamente
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 border rounded">
+                            <i class="fas fa-chart-bar fa-2x text-success mb-2"></i>
+                            <h5>Estadísticas</h5>
+                            <p class="text-muted">Ver reportes y análisis del sistema</p>
+                            <button class="btn btn-outline-success btn-sm" disabled>
+                                Próximamente
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 border rounded">
+                            <i class="fas fa-cogs fa-2x text-warning mb-2"></i>
+                            <h5>Configuración</h5>
+                            <p class="text-muted">Configurar opciones del sistema</p>
+                            <button class="btn btn-outline-warning btn-sm" disabled>
+                                Próximamente
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
