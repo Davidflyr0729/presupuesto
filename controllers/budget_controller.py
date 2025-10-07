@@ -30,20 +30,16 @@ class BudgetController:
         
         budgets = self.budget_model.get_by_user(user_id, month, year)
         
-        # CORREGIDO: Obtener TODAS las categorías de gastos y filtrar manualmente
+        # Obtener TODAS las categorías de gastos
         all_categories = self.expense_model.get_categories()
-        
-        # Filtrar categorías que no tienen presupuesto
-        budgeted_category_ids = [budget['categoria_gasto_id'] for budget in budgets]
-        categories_without_budget = [cat for cat in all_categories if cat['id'] not in budgeted_category_ids]
         
         # Obtener el resumen general
         summary = self.budget_model.get_budget_summary(user_id, month, year)
         
         return render_template('budgets/index.html',
                              budgets=budgets,
-                             categories=categories_without_budget,  # Solo categorías sin presupuesto
-                             expense_categories=all_categories,     # Todas las categorías
+                             categories=all_categories,  # ← CAMBIO: Ahora pasamos TODAS las categorías
+                             expense_categories=all_categories,
                              summary=summary,
                              current_month=month,
                              current_year=year,
